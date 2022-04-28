@@ -7,5 +7,7 @@
   "bin": {
     "create-wirejs-app": "./bin.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "recursive-copy": "^2.0.14"
+  }
 }

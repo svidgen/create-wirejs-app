@@ -3,40 +3,44 @@
 const fs = require('fs');
 const process = require('process');
 const { exec, execSync } = require('child_process');
+const copy = require('recursive-copy');
 
-const [ nodeBinPath, scriptPath, projectName ] = process.argv;
+const [
+	nodeBinPath,
+	scriptPath,
+	projectName,
+] = process.argv;
 
-const packageJson = `{
-	"name": "${projectName}",
-	"version": "0.1.0",
-	"private": true,
-	"dependencies": {
-		"ex-gratia": "^1.0.3",
-		"wirejs-dom": "^1.0.4"
-	},
-	"scripts": {
-	  "start": "wirejs-scripts start",
-	  "build": "wirejs-scripts build"
-	}
-  }
-`;
+(async () => {
+	fs.mkdirSync(projectName);
 
-const something = `
-	"test": "jest",
-	"build": "rimraf dist && yarn ex-gratia && webpack",
-	"build:watch": "rimraf dist && webpack --mode development --progress --watch",
-	"serve": "http-server ./dist -o",
-	"start": "concurrently -k -p \"[{name}]\" -n \"Build,Serve\" -c \"cyan.bold,green.bold\" \"npm run build:watch\" \"npm run serve\""
-`;
+	console.log("Writing base package files ...");
+	await copy(`${__dirname}/template`, `./${projectName}`);
 
-fs.mkdirSync(projectName);
-fs.writeFileSync(`${projectName}/package.json`, packageJson);
+	fs.writeFileSync(`${projectName}/package.json`,
+		JSON.stringify({
+			name: projectName,
+			version: "1.0.0",
+			private: true,
+			dependencies: {
+				"ex-gratia": "^1.0.3",
+				"wirejs-dom": "^1.0.4",
+				"wirejs-scripts": "~/js/wirejs-scripts",
+				"highlight.js": "^11.5.1"
+			},
+			scripts: {
+				start: "wirejs-scripts start",
+				build: "wirejs-scripts build"
+			}
+		}, null, "\t")
+	);
 
-process.chdir(projectName);
-execSync('npm install');
+	console.log("Fetching dependencies ...");
+	process.chdir(projectName);
+	execSync('npm install');
 
-console.log(`
-Created ${projectName}.
+	console.log(`
+Done creating ${projectName}!
 
 To get started:
 
@@ -45,3 +49,5 @@ To get started:
 
 Happy coding!
 `);
+
+})();
