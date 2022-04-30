@@ -5,6 +5,7 @@ require('highlight.js/styles/github.css');
 require('./default.css');
 
 // components in alphabetical order, please!
+require('../components/countdown');
 
 const GoogleAds = require('ex-gratia/google');
 

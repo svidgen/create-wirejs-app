@@ -1,35 +1,18 @@
 <!doctype html>
-<html xmlns:tpdc="https://www.thepointless.com/ns/tpdc">
+<html>
 	<head>
-		<title>${title + " - thepointless.com"}</title>
+		<title>${title + " - example.com"}</title>
 		<link rel="shortcut icon" type="image/ico" href="/images/favicon.ico"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 		<meta name="google-site-verification" content="zYKsu_Prv58mFQyRGJA3j1sDsQzAytFhE2SjFMaQk14" />
 		${metatags}
-		<!-- Global site tag (gtag.js) - Google Analytics -->
-		<script>
-			if (location.host === 'www.thepointless.com') {
-				const ga_script = document.createElement('script');
-				ga_script.src = "https://www.googletagmanager.com/gtag/js?id=UA-920576-1";
-				document.head.appendChild(ga_script);
-				window.dataLayer = window.dataLayer || [];
-				window.gtag = function(){dataLayer.push(arguments);}
-				gtag('js', new Date());
-				gtag('config', 'UA-920576-1');
-			} else {
-				window.gtag = function(...args) {
-					console.log('gtag()', args);
-				};
-			}
-		</script>
 		<script src='/layouts/default.js?v=${BUILD_ID}'></script>
 	</head>
 	<body>
 		<div id='container'>
-			<tpdc:fork></tpdc:fork>
 			<div id='header'>
-				<h1><a href='/'>thepointless.com</a> / ${title || "thepointless.com"}</h1>
+				<h1><a href='/'>home</a> / ${title || "example.com"}</h1>
 			</div>
 			<div class='navbar'><tpdc:menu></tpdc:menu></div>
 			<div id='content'>
