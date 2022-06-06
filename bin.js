@@ -20,7 +20,7 @@ const [
 	const packageJson = await fs.readFileSync(`./${projectName}/package.json`);
 	fs.writeFileSync(
 		`./${projectName}/package.json`,
-		packageJson.toString().replaceAll(
+		packageJson.toString().replace(
 			/project-name/, projectName
 		)
 	);
