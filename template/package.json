@@ -5,8 +5,10 @@
 	"dependencies": {
 		"ex-gratia": "^1.0.3",
 		"wirejs-dom": "^1.0.4",
-		"wirejs-scripts": "C:/Projects/wirejs-scripts",
 		"highlight.js": "^11.5.1"
+	},
+	"devDependencies": {
+		"wirejs-scripts": "^1.0.3"
 	},
 	"scripts": {
 		"start": "wirejs-scripts start",
