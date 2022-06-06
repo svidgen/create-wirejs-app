@@ -9,5 +9,13 @@
   },
   "dependencies": {
     "recursive-copy": "^2.0.14"
-  }
+  },
+  "files": [
+    "bin.js",
+    "package.json",
+    "template/src/*",
+    "template/static/*",
+    "template/.gitignore",
+    "template/package.json*"
+  ]
 }

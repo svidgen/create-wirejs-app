@@ -1,3 +1,4 @@
 node_modules
 template/node_modules/**
+template/src/build_id.json
 yarn.lock
