@@ -20,7 +20,7 @@ graph LR;
 	y --> z(definitely z)
 ```
 
-Of course, you can also build [normal html pages](html).
+Of course, you can also build [normal html pages](html.html).
 
 And of course, you can also embed HTML with custom components directly in your
 markdown:

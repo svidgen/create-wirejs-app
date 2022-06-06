@@ -17,22 +17,12 @@ const [
 	console.log("Writing base package files ...");
 	await copy(`${__dirname}/template`, `./${projectName}`);
 
-	fs.writeFileSync(`${projectName}/package.json`,
-		JSON.stringify({
-			name: projectName,
-			version: "1.0.0",
-			private: true,
-			dependencies: {
-				"ex-gratia": "^1.0.3",
-				"wirejs-dom": "^1.0.4",
-				"wirejs-scripts": "~/js/wirejs-scripts",
-				"highlight.js": "^11.5.1"
-			},
-			scripts: {
-				start: "wirejs-scripts start",
-				build: "wirejs-scripts build"
-			}
-		}, null, "\t")
+	const packageJson = await fs.readFileSync(`./${projectName}/package.json`);
+	fs.writeFileSync(
+		`./${projectName}/package.json`,
+		packageJson.toString().replaceAll(
+			/project-name/, projectName
+		)
 	);
 
 	console.log("Fetching dependencies ...");
