@@ -1,20 +1,24 @@
 const { DomClass } = require('wirejs-dom');
-const markup = require('./countdown.tpl');
+const markup = require('./countdown.tpl').default;
 
 const Countdown = DomClass(markup, function() {
-	this.remainingTime = this.from;
+	this.remaining = this.from || 60 * 60;
 	
-	this.tick = () => {
-		this.remainingTime = this.remainingTime - 1;
+	const tick = () => {
+		this.remaining = this.remaining - 1;
 
-		if (this.remainingTime === 0) {
-			this.countdown = "That's it! Time's up!"
+		if (this.remaining == 1) {
+			this.label = 'second';
+		}
+
+		if (this.remaining == 0) {
+			this.countdown = "<b><i>That's it!</i> Time's up!</b>"
 		} else {
-			setTimeout(() => this.tick, 1000);
+			setTimeout(() => tick(), 1000);
 		}
 	};
 
-	this.tick();	
+	tick();	
 });
 
 module.exports = Countdown;
