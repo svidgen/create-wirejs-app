@@ -3,3 +3,5 @@ template/node_modules/**
 template/src/build_id.json
 yarn.lock
 *.swp
+dist
+api

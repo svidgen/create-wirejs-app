@@ -1,6 +1,9 @@
 const wirejs = require('wirejs-dom');
 require('highlight.js/styles/github.css');
 
+const api = require('../api/sample');
+const otherapi = require('../api/test-nested/nested-sample');
+
 // sheet(s) first
 require('./default.css');
 
