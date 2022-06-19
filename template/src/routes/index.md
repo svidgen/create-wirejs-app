@@ -26,5 +26,5 @@ And of course, you can also embed HTML with custom components directly in your
 markdown:
 
 <div>
-	<sample:countdown from=30></sample:countdown>
+	<sample:countdown from=10></sample:countdown>
 </div>
