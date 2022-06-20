@@ -2,7 +2,7 @@ const { DomClass } = require('wirejs-dom');
 const markup = require('./countdown.tpl').default;
 
 // Yes, we just import our API's like regular modules.
-// Our special API handling wraps them up for us.
+// Our API loader wraps them appropriately for us.
 const { hello } = require('../api/sample');
 
 const Countdown = DomClass(markup, function() {

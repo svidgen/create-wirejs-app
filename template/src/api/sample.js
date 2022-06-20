@@ -1,4 +1,4 @@
-// const { DomClass } = require('wirejs-dom');
+const { defaultGreeting } = require('../lib/sample-lib');
 
 module.exports = {
 	/**
@@ -6,5 +6,5 @@ module.exports = {
 	 * @param {string} name
 	 * @returns {string} A friendly greeting.
 	 */
-	hello: async (name) => `Oh hai, ${name}.`
+	hello: async (name) => `${defaultGreeting()}, ${name}.`
 };
