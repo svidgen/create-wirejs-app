@@ -5,7 +5,6 @@
 		<link rel="shortcut icon" type="image/ico" href="/images/wirejs.svg"/>
 		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-		<meta name="google-site-verification" content="zYKsu_Prv58mFQyRGJA3j1sDsQzAytFhE2SjFMaQk14" />
 		${metatags}
 		<script src='/layouts/default.js?v=${BUILD_ID}'></script>
 	</head>
@@ -27,5 +26,16 @@
 				Do only awesome things.
 			</div>
 		</div>
+
+		<!-- diagrams rendering for markdown files -->
+		<script type="module">
+			import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@9/dist/mermaid.esm.min.mjs';
+			[...document.body.getElementsByClassName('language-mermaid')]
+				.forEach(node => {
+					node.classList.add('mermaid');
+				});
+			mermaid.init({});
+		</script>
+
 	</body>
 </html>

@@ -1,14 +1,13 @@
 {
 	"name": "project-name",
-	"version": "1.0.0",
+	"version": "2.0.0",
 	"private": true,
 	"dependencies": {
-		"ex-gratia": "^1.0.3",
-		"wirejs-dom": "^1.0.4",
-		"highlight.js": "^11.5.1"
+		"highlight.js": "^11.5.1",
+		"wirejs-dom": "^1.0.7"
 	},
 	"devDependencies": {
-		"wirejs-scripts": "^1.0.3"
+		"wirejs-scripts": "^2.0.0"
 	},
 	"scripts": {
 		"start": "wirejs-scripts start",

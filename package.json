@@ -1,6 +1,6 @@
 {
   "name": "create-wirejs-app",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Initializes a wirejs package.",
   "author": "Jon Wire",
   "license": "MIT",
@@ -15,7 +15,7 @@
     "package.json",
     "template/src/*",
     "template/static/*",
-    "template/.gitignore",
+    "template/_gitignore",
     "template/package.json*"
   ]
 }

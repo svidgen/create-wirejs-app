@@ -16,6 +16,10 @@ const [
 
 	console.log("Writing base package files ...");
 	await copy(`${__dirname}/template`, `./${projectName}`);
+	await copy(
+		`${__dirname}/template/_gitignore`,
+		`./${projectName}/.gitignore`
+	);
 
 	const packageJson = await fs.readFileSync(`./${projectName}/package.json`);
 	fs.writeFileSync(
