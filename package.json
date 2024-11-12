@@ -9,9 +9,9 @@
     "description": "wirejs-scripts and create scripts.",
     "author": "Jon Wire",
     "license": "MIT",
-    "dependencies": {},
     "scripts": {
-
+    },
+    "devDependencies": {
+        "rimraf": "^6.0.1"
     }
-  }
-  
+}

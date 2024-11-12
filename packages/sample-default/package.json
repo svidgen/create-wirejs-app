@@ -1,0 +1,18 @@
+{
+    "name": "sample-default",
+    "private": "true",
+    "version": "1.0.0",
+    "description": "Creates an app using create-wirejs-app for testing/demonstration purposes.",
+    "author": "Jon Wire",
+    "license": "MIT",
+    "scripts": {
+        "build": "rimraf sample-app && create-wirejs-app sample-app"
+    },
+    "dependencies": {
+        "create-wirejs-app": "*",
+        "wirejs-scripts": "*"
+    },
+    "devDependencies": {
+        "rimraf": "*"
+    }
+}

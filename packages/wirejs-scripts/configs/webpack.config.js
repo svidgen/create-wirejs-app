@@ -57,57 +57,16 @@ const CollectLayouts = {
 const SSG = {
 	transformer: async (content, _path) => {
 		let _meta = {};
-		function meta(o) {
-			_meta = o;
-			return '';
-		}
-
-		const _require = require;
-		const WD = path.dirname(_path);
 
 		let body;
 		try {
-			require = (requirePath) => {
-				const absolutePath = _require.resolve(requirePath, {paths: [WD]});
-				return _require(absolutePath);
-			}
-
-			if (_path.endsWith('.md')) {
-				let isInCodeBlock = false;
-				const escapedMarkdown = content.toString().split(/\n/)
-					.reduce((lines, line) => {
-						if (isInCodeBlock) {
-							lines[lines.length - 1] += "\n" + line;
-						} else {
-							lines.push(line);
-						}
-						if (line.startsWith('```')) {
-							isInCodeBlock = !isInCodeBlock;
-						}
-						return lines;
-					}, [])
-					.map(l => l.trim()).join('\n')
-					.replace(/(``+)/g, m => Array(m.length).fill('\\`').join(''))
-				;
-				const bodyMarkdown = eval('`' + escapedMarkdown + '`');
-				body = marked(bodyMarkdown);
-			} else {
-				body = eval('`' + content + '`');
-			}
+            body = _path.endsWith('.md') ? marked(content.toString()) : content.toString();
 		} catch (err) {
 			console.error(`Could not parse page ${_path}`, err);
 			throw err;
 		} finally {
 			require = _require;
 		}
-
-		const metatags = Object.entries(_meta).map(([tag, content]) => {
-			tag = tag.replace(/"/g, '&quot;');
-			content = content.replace(/"/g, '&quot;');
-			return `<meta name="${tag}" content="${content}" />`;
-		}).join('\n');
-
-		let title = _meta.title;
 
 		// apply no layout if the document has already provided the
 		// overarching html structure.
