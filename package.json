@@ -1,21 +1,17 @@
 {
-  "name": "create-wirejs-app",
-  "version": "1.0.2",
-  "description": "Initializes a wirejs package.",
-  "author": "Jon Wire",
-  "license": "MIT",
-  "bin": {
-    "create-wirejs-app": "./bin.js"
-  },
-  "dependencies": {
-    "recursive-copy": "^2.0.14"
-  },
-  "files": [
-    "bin.js",
-    "package.json",
-    "template/src/*",
-    "template/static/*",
-    "template/_gitignore",
-    "template/package.json*"
-  ]
-}
+    "name": "wirejs-infra",
+    "workspaces": [
+        "packages/create-wirejs-app",
+        "packages/wirejs-scripts"
+    ],
+    "private": "true",
+    "version": "1.0.0",
+    "description": "wirejs-scripts and create scripts.",
+    "author": "Jon Wire",
+    "license": "MIT",
+    "dependencies": {},
+    "scripts": {
+
+    }
+  }
+  

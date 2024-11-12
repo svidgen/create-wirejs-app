@@ -3,10 +3,10 @@
 	"version": "2.0.0",
 	"private": true,
 	"dependencies": {
-		"highlight.js": "^11.5.1",
-		"wirejs-dom": "^1.0.7"
+		"wirejs-dom": "^1.0.19"
 	},
 	"devDependencies": {
+		"highlight.js": "^11.5.1",
 		"wirejs-scripts": "^2.0.0"
 	},
 	"scripts": {

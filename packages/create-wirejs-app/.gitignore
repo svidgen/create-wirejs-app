@@ -1,0 +1,9 @@
+node_modules
+template/node_modules/**
+template/src/build_id.json
+template/src/api
+template/src/dist
+yarn.lock
+*.swp
+dist
+api
