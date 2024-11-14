@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// edited
+
 const process = require('process');
 const rimraf = require('rimraf');
 const fs = require('fs');

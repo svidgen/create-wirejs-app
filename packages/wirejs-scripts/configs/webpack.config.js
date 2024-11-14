@@ -64,8 +64,6 @@ const SSG = {
 		} catch (err) {
 			console.error(`Could not parse page ${_path}`, err);
 			throw err;
-		} finally {
-			require = _require;
 		}
 
 		// apply no layout if the document has already provided the
@@ -86,7 +84,7 @@ const SSG = {
 		const layout = layouts[layoutPath];
 
 		try {
-			return eval('`' + layout + '`');
+			return layout;
 		} catch (err) {
 			console.error(`Could not parse layout ${layoutPath}`, err);
 			throw err;
