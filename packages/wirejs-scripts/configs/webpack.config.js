@@ -25,13 +25,6 @@ const BUILD_ID = (new Date()).getTime();
 
 fs.writeFileSync('./src/build_id.json', JSON.stringify(BUILD_ID.toString()));
 
-
-// TODO: Refactor these transforms out of here.
-// TODO: Create a separate package to manage all of this for easy reuse on
-// other projects.
-// TODO: consider whether using the front-end framework for SSG would be safe,
-// and intuitive, rather than having two completely separate rendering modes.
-
 function distPath({ subpathOut = '', subpathIn = '' } = {}) {
 	return function ({ context, absoluteFilename }) {
 		const prefixIn = path.resolve(context, subpathIn);
@@ -113,17 +106,6 @@ module.exports = (env, argv) => {
 	}, {});
 
 	return {
-		/*
-		devServer: {
-			contentBase: path.join(CWD, 'dist'),
-			compress: true,
-			open: true,
-			port: 9999,
-			watchContentBase: true,
-			// liveReload: true,
-			// hot: true
-		},
-		*/
 		watchOptions: {
 			ignored: [
 				"**/dist/*",
