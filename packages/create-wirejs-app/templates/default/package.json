@@ -1,15 +1,22 @@
 {
-	"name": "project-name",
+	"name": "sample-app",
 	"version": "2.0.0",
 	"private": true,
+	"type": "module",
+	"workspaces": [
+		"src",
+		"api"
+	],
 	"dependencies": {
 		"wirejs-dom": "^1.0.19"
 	},
 	"devDependencies": {
 		"highlight.js": "^11.5.1",
-		"wirejs-scripts": "^2.0.0"
+		"wirejs-scripts": "file:../../wirejs-scripts"
 	},
 	"scripts": {
+		"prebuild": "npm run prebuild --workspaces --if-present",
+		"prestart": "npm run prestart --workspaces --if-present",
 		"start": "wirejs-scripts start",
 		"build": "wirejs-scripts build"
 	}

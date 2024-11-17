@@ -1,21 +1,21 @@
 {
-    "name": "wirejs-infra",
-    "workspaces": [
-        "packages/create-wirejs-app",
-        "packages/wirejs-scripts",
-        "packages/sample-default"
-    ],
-    "private": "true",
-    "version": "1.0.0",
-    "description": "wirejs-scripts and create scripts.",
-    "author": "Jon Wire",
-    "license": "MIT",
-    "scripts": {
-        "build": "npm run build --ws",
-        "clean": "npm run clean --ws",
-        "start": "npm run start -w sample-default"
-    },
-    "devDependencies": {
-        "rimraf": "^6.0.1"
-    }
+	"name": "wirejs-infra",
+	"workspaces": [
+		"packages/create-wirejs-app",
+		"packages/wirejs-scripts",
+		"packages/sample-default"
+	],
+	"private": "true",
+	"version": "1.0.0",
+	"description": "wirejs-scripts and create scripts.",
+	"author": "Jon Wire",
+	"license": "MIT",
+	"scripts": {
+		"build": "npm run build --ws",
+		"clean": "npm run clean --ws",
+		"start": "npm run start -w sample-default"
+	},
+	"devDependencies": {
+		"rimraf": "^6.0.1"
+	}
 }

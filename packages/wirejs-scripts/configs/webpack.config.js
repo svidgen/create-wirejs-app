@@ -106,6 +106,12 @@ module.exports = (env, argv) => {
 	}, {});
 
 	return {
+		// here's where we might need to select different "import" conditions,
+		// which match with `exports: { path: { condition: "" } }` in package.json
+		// for different build types for API's, SSR, etc.
+		resolve: {
+			conditionNames: ['wirejs:client'],
+		},
 		watchOptions: {
 			ignored: [
 				"**/dist/*",

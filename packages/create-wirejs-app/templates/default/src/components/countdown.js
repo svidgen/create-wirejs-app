@@ -1,4 +1,7 @@
-const { DomClass } = require('wirejs-dom');
+import { hello } from 'my-api';
+import { DomClass } from 'wirejs-dom';
+
+console.log('hello', hello('world'));
 
 const markup = `<sample:countdown>
 	<h3>Limited time offer!</h3>
@@ -30,4 +33,4 @@ const Countdown = DomClass(markup, function() {
 	tick();	
 });
 
-module.exports = Countdown;
+export default Countdown;
