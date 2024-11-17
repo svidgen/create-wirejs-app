@@ -1,0 +1,4 @@
+node_modules
+dist
+src/build_id.json
+api/index.client.js
