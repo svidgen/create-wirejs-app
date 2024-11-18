@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-// edited
-
 const process = require('process');
 const rimraf = require('rimraf');
 const fs = require('fs');
@@ -10,11 +8,122 @@ const path = require('path');
 const webpack = require('webpack');
 const webpackConfigure = require('./configs/webpack.config');
 const WebpackDevServer = require('webpack-dev-server');
+const { log } = require('console');
 
 const CWD = process.cwd();
 const webpackConfig = webpackConfigure(process.env, process.argv);
 const [_nodeBinPath, _scriptPath, action] = process.argv;
 const processes = [];
+
+const logger = {
+	log(...items) {
+		console.log('wirejs', ...items);
+	},
+	error(...items) {
+		console.error('wirejs ERROR', ...items);
+	},
+	info(...items) {
+		console.info('wirejs', ...items);
+	},
+	warn(...items) {
+		console.warn('wirejs', ...items);
+	}
+};
+
+async function exec(cmd) {
+	console.log('exec', cmd);
+	return new Promise((resolve, reject) => {
+		let proc;
+		proc = child_process.exec(cmd, (error, stdout, stderr) => {
+			processes.splice(processes.indexOf(proc), 1);
+			if (error || stderr) {
+				reject({ error, stderr });
+			} else {
+				resolve(stdout);
+			}
+		});
+		processes.push(proc);
+	});
+}
+
+/**
+ * 
+ * @param {object} api
+ * @param {{method: string, args: any[]}} call
+ * @returns {Promise<any>}
+ */
+async function callApiMethod(api, call) {
+	try {
+		const [scope, ...restOfScope] = call.method.split('.');
+		if (typeof api[scope] === 'function' && restOfScope.length === 0) {
+			return {
+				data: await api[scope](...call.args)
+			};
+		} else if (typeof api[scope] === 'object' && restOfScope.length > 0) {
+			return callApiMethod(api[scope], {
+				...call,
+				method: restOfScope.join('.'),
+			});
+		} else {
+			return { error: "Method not found" };
+		}
+	} catch (error) {
+		return { error };
+	}
+}
+
+/**
+ * @type {WebpackDevServer.ByPass}
+ */
+async function handleApiResponse(req, res) {
+	const {
+		headers, url, method, params, query,
+		baseUrl, originalUrl, trailers
+	} = req;
+
+	if (url === '/api') {
+		const body = await postData(req);
+		const calls = JSON.parse(body);
+
+		logger.info('request parsed', {
+			url,
+			body,
+			calls
+		});
+
+		const apiPath = path.join(CWD, 'api', 'index.js');
+		const api = await import(`${apiPath}?cache-id=${new Date().getTime()}`);
+
+		const responses = [];
+		for (const call of calls) {
+			responses.push(await callApiMethod(api, call));
+		}
+
+		res.send(JSON.stringify(
+			responses
+		));
+	} else {
+		logger.error('Bad endpoint given', { url });
+
+		res.status(404);
+		res.send("404 - Endpoint not found");
+	}
+}
+
+async function postData(request) {
+	return new Promise((resolve, reject) => {
+		const buffer = [];
+		const timeout = setTimeout(() => {
+			reject("Post data not received.");
+		}, 5000);
+		request.on('data', data => buffer.push(data));
+		request.on('end', () => {
+			if (!timeout) return;
+			clearTimeout(timeout);
+			resolve(buffer.join(''));
+		});
+	});
+};
 
 async function compile(watch = false) {
 	const stats = await new Promise((resolve, reject) => {
@@ -29,25 +138,28 @@ async function compile(watch = false) {
 					directory: path.join(CWD, 'dist')
 				},
 				open: true,
+				proxy: {
+					'/api': {
+						bypass: handleApiResponse
+					}
+				}
 			}, compiler);
 
-			console.log('Starting server...');
+			logger.log('Starting server...');
 			server.start().then(() => {
 				resolve({});
 			});
-
-			resolve({});
 		} else {
-			console.log('wirejs instantiating webpack compiler');
+			logger.log('instantiating webpack compiler');
 			compiler = webpack(webpackConfig);
 			compiler.run((err, res) => {
-				console.log('wirejs invoking webpack compiler');
+				logger.log('invoking webpack compiler');
 				if (err) {
-					console.error('wirejs webpack compiler failed');
-					console.error(err);
+					logger.error('webpack compiler failed');
+					logger.error(err);
 					reject(err);
 				} else {
-					console.error('wirejs webpack compiler succeeded');
+					logger.error('webpack compiler succeeded');
 					resolve(res);
 				}
 			});
@@ -55,7 +167,7 @@ async function compile(watch = false) {
 	});
 
 	if (stats?.compilation?.errors?.length > 0) {
-		console.log('wirejs compilation errors', stats.compilation.errors);
+		logger.log('compilation errors', stats.compilation.errors);
 		throw new Error('Build failed.');
 	}
 
@@ -64,31 +176,31 @@ async function compile(watch = false) {
 
 const engine = {
 	async build({ watch = false } = {}) {
-		console.log('wirejs build starting');
+		logger.log('build starting');
 
 		rimraf.sync('dist');
-		console.log('wirejs cleared old dist folder');
+		logger.log('cleared old dist folder');
 
 		fs.mkdirSync('dist');
-		console.log('wirejs recreated dist folder');
+		logger.log('recreated dist folder');
 
 		try {
 
 			await compile(watch);
-			console.log('wirejs finished compile');
+			logger.log('finished compile');
 		} catch (err) {
-			console.log(err);
+			logger.error(err);
 		}
-		console.log('wirejs build finished')
+		logger.log('build finished')
 	},
 
 	async start() {
-		console.log('wirejs starting')
+		logger.log('starting')
 		this.build({ watch: true });
 
 		await new Promise(resolve => {
 			function exitGracefully() {
-				console.log('Exiting gracefully ...');
+				logger.log('Exiting gracefully ...');
 				processes.forEach(p => p.kill());
 				resolve();
 			}
@@ -97,17 +209,17 @@ const engine = {
 		});
 
 		// explicit exit forces lingering child processes to die.
-		console.log('wirejs stopping')
+		logger.log('stopping')
 		process.exit();
 	}
 
 };
 
 if (typeof engine[action] === 'function') {
-	console.log(`Running ${action} ... `);
+	logger.log(`Running ${action} ... `);
 	engine[action]().then(() => {
-		console.log('All done!');
+		logger.log('All done!');
 	});
 } else {
-	console.error(`Invalid wirejs-scripts action: ${action}`);
+	logger.error(`Invalid wirejs-scripts action: ${action}`);
 }
