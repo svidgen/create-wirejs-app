@@ -103,7 +103,7 @@ const Generated = {
 			if (contentPath.endsWith('.js')) {
 				const module = await import(contentPath);
 				if (typeof module.generate === 'function') {
-					return '<doctype html!>\n' + module.generate(contentPath).outerHTML;
+					return '<doctype html!>\n' + await module.generate(contentPath).outerHTML;
 				} else {
 					return;
 				}
