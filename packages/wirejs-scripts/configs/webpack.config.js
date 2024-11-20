@@ -5,6 +5,7 @@ const { exec } = require('child_process');
 const process = require('process');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const marked = require('marked');
+const { JSDOM } = require('jsdom');
 
 const CWD = process.cwd();
 
@@ -25,13 +26,14 @@ const BUILD_ID = (new Date()).getTime();
 
 fs.writeFileSync('./src/build_id.json', JSON.stringify(BUILD_ID.toString()));
 
-function distPath({ subpathOut = '', subpathIn = '' } = {}) {
+function distPath({ subpathOut = '', subpathIn = '', extensionOut } = {}) {
 	return function ({ context, absoluteFilename }) {
 		const prefixIn = path.resolve(context, subpathIn);
 		const prefixOut = path.resolve(context, 'dist', subpathOut);
 		const relativeName = path.join('./', absoluteFilename.slice(prefixIn.toString().length));
-		const fullOutPath = path.resolve(prefixOut, relativeName)
-			.replace(/\.md$/, ".html");
+		const fullOutPath = extensionOut ?
+			path.resolve(prefixOut, relativeName).replace(/\.\w+$/, ".html")
+			: path.resolve(prefixOut, relativeName);
 		console.log(`Mapping ${relativeName} to ${fullOutPath}`);
 		return fullOutPath;
 	};
@@ -85,6 +87,36 @@ const SSG = {
 	}
 };
 
+const Generated = {
+	transformer: async (content, contentPath) => {
+		const DOM = new JSDOM(
+			'<root></root>',
+			{ pretendToBeVisual: false, contentType: 'text/xml' }
+		);
+		global.window = DOM.window
+		global.document = window.document;
+		global.Element = window.Element;
+		global.Node = window.Node;
+		global.NodeList = window.NodeList;
+
+		try {
+			if (contentPath.endsWith('.js')) {
+				const module = await import(contentPath);
+				if (typeof module.generate === 'function') {
+					return '<doctype html!>\n' + module.generate(contentPath).outerHTML;
+				} else {
+					return;
+				}
+			} else {
+				return content.toString();
+			}
+		} catch (err) {
+			console.error(`Could not generate page ${contentPath}`, err);
+			throw err;
+		}
+	}
+};
+
 module.exports = (env, argv) => {
 	var devtool = 'source-map';
 	if (argv.mode == 'development') {
@@ -94,10 +126,13 @@ module.exports = (env, argv) => {
 	const sources = ['./src/index.js']
 		.concat(glob.sync('./src/layouts/**/*.js'))
 		.concat(glob.sync('./src/routes/**/*.js'))
+		.concat(glob.sync('./src/ssg/**/*.js'))
 	;
 
 	const entry = sources.reduce((files, path) => {
-		if (path.match(/src\/routes/)) {
+		if (path.match(/src\/ssg/)) {
+			files[path.toString().slice('./src/ssg'.length)] = path;
+		} else if (path.match(/src\/routes/)) {
 			files[path.toString().slice('./src/routes'.length)] = path;
 		} else if (path.match(/src\/layouts/)) {
 			files[path.toString().slice('./src/'.length)] = path;
@@ -155,70 +190,77 @@ module.exports = (env, argv) => {
 						priority: 10,
 					},
 					{
-						from: './src/routes/**/*.md',
-						to: distPath({ subpathIn: 'src/routes' }),
-						transform: SSG,
+						from: './src/ssg/**/*.js',
+						to: distPath({ subpathIn: 'src/ssg', extensionOut: 'html' }),
+						transform: Generated,
 						noErrorOnMissing: true,
-						priority: 3,
+						priority: 5
 					},
-					{
-						from: './src/routes/**/*.html',
-						to: distPath({ subpathIn: 'src/routes' }),
-						transform: SSG,
-						noErrorOnMissing: true,
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.xml',
-						to: distPath({ subpathIn: 'src/routes' }),
-						transform: SSG,
-						noErrorOnMissing: true,
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.rss',
-						to: distPath({ subpathIn: 'src/routes' }),
-						transform: SSG,
-						noErrorOnMissing: true,
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.css',
-						to: distPath({ subpathIn: 'src/routes' }),
-						noErrorOnMissing: true,
-						// trasform: ???
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.png',
-						to: distPath({ subpathIn: 'src/routes' }),
-						noErrorOnMissing: true,
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.jpg',
-						to: distPath({ subpathIn: 'src/routes' }),
-						noErrorOnMissing: true,
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.json',
-						to: distPath({ subpathIn: 'src/routes' }),
-						noErrorOnMissing: true,
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.svg',
-						to: distPath({ subpathIn: 'src/routes' }),
-						noErrorOnMissing: true,
-						priority: 3,
-					},
-					{
-						from: './src/routes/**/*.mp3',
-						to: distPath({ subpathIn: 'src/routes' }),
-						noErrorOnMissing: true,
-						priority: 3,
-					},
+					// {
+					// 	from: './src/routes/**/*.md',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	transform: SSG,
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.html',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	transform: SSG,
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.xml',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	transform: SSG,
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.rss',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	transform: SSG,
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.css',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	noErrorOnMissing: true,
+					// 	// trasform: ???
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.png',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.jpg',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.json',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.svg',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
+					// {
+					// 	from: './src/routes/**/*.mp3',
+					// 	to: distPath({ subpathIn: 'src/routes' }),
+					// 	noErrorOnMissing: true,
+					// 	priority: 3,
+					// },
 				],
 			})
 		],
