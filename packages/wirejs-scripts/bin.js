@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
-const process = require('process');
-const rimraf = require('rimraf');
-const fs = require('fs');
-const path = require('path');
+import process from 'process';
+import { rimraf } from 'rimraf';
+import fs from 'fs';
+import path from 'path';
 
-const webpack = require('webpack');
-const webpackConfigure = require('./configs/webpack.config');
-const WebpackDevServer = require('webpack-dev-server');
-const { log } = require('console');
+import webpack from 'webpack';
+import webpackConfigure from './configs/webpack.config.js';
+import WebpackDevServer from 'webpack-dev-server';
 
 const CWD = process.cwd();
 const webpackConfig = webpackConfigure(process.env, process.argv);
@@ -127,6 +126,7 @@ async function postData(request) {
 
 async function compile(watch = false) {
 	const stats = await new Promise((resolve, reject) => {
+		let compiler;
 		if (watch) {
 			compiler = webpack({
 				...webpackConfig,

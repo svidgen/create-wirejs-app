@@ -4,7 +4,7 @@
 	"private": true,
 	"type": "module",
 	"dependencies": {
-		"wirejs-dom": "^1.0.19",
+		"wirejs-dom": "^1.0.21",
         "my-api": "*"
 	}
 }

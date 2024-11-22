@@ -2,6 +2,7 @@
 	"name": "wirejs-scripts",
 	"version": "2.0.5",
 	"description": "Basic build and start commands for wirejs apps",
+	"type": "module",
 	"bin": {
 		"wirejs-scripts": "./bin.js"
 	},
@@ -33,6 +34,6 @@
 		"webpack": "^5.28.0",
 		"webpack-cli": "^4.6.0",
 		"webpack-dev-server": "^4.8.1",
-		"wirejs-dom": "^1.0.4"
+		"wirejs-dom": "^1.0.21"
 	}
 }

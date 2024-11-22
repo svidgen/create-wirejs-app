@@ -1,11 +1,12 @@
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob');
-const { exec } = require('child_process');
-const process = require('process');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
-const marked = require('marked');
-const { JSDOM } = require('jsdom');
+import { useJSDOM } from 'wirejs-dom/v2';
+import fs from 'fs';
+import path from 'path';
+import glob from 'glob';
+import process from 'process';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import marked from 'marked';
+import { JSDOM } from 'jsdom';
+
 
 const CWD = process.cwd();
 
@@ -89,21 +90,18 @@ const SSG = {
 
 const Generated = {
 	transformer: async (content, contentPath) => {
-		const DOM = new JSDOM(
-			'<root></root>',
-			{ pretendToBeVisual: false, contentType: 'text/xml' }
-		);
-		global.window = DOM.window
-		global.document = window.document;
-		global.Element = window.Element;
-		global.Node = window.Node;
-		global.NodeList = window.NodeList;
+		useJSDOM(JSDOM);
 
 		try {
 			if (contentPath.endsWith('.js')) {
 				const module = await import(contentPath);
 				if (typeof module.generate === 'function') {
-					return '<doctype html!>\n' + await module.generate(contentPath).outerHTML;
+					const doc = await module.generate(contentPath)
+					const doctype = doc.parentNode.doctype?.name || '';
+					return [
+						doctype ? `<!doctype ${doctype}>\n` : '',
+						doc.outerHTML
+					].join('');
 				} else {
 					return;
 				}
@@ -117,7 +115,7 @@ const Generated = {
 	}
 };
 
-module.exports = (env, argv) => {
+export default (env, argv) => {
 	var devtool = 'source-map';
 	if (argv.mode == 'development') {
 		devtool = 'eval-cheap-source-map';
