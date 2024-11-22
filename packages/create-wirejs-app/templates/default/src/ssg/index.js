@@ -1,4 +1,4 @@
-import { html } from 'wirejs-dom/v2';
+import { html, node } from 'wirejs-dom/v2';
 
 /**
  * 
@@ -6,19 +6,24 @@ import { html } from 'wirejs-dom/v2';
  * @returns 
  */
 function Greeting(name) {
-	return html`<div>Hello, <b>${name}</b></div>`;
+	return html`<div>Hello, <b>${name}</b>!</div>`;
 }
 
 export function generate(path) {
-	return html`
-	<!doctype html>
-	<html>
-		<head>
-			<title>test</title>
-		</head>
-		<body>
-			this is a test
-			${Greeting('Jon')}
-		</body>
-	</html>`;
+	const page = html`
+		<!doctype html>
+		<html>
+			<head>
+				<title>test</title>
+			</head>
+			<body>
+				this is a test
+				${node('greeting', Greeting('Jon'))}
+			</body>
+		</html>
+	`;
+
+	page.data.greeting = Greeting('World');
+
+	return page;
 }
