@@ -1,4 +1,4 @@
-import { useJSDOM } from 'wirejs-dom/v2';
+import { useJSDOM, dehydrate, pendingHydration } from 'wirejs-dom/v2';
 import fs from 'fs';
 import path from 'path';
 import glob from 'glob';
@@ -96,8 +96,26 @@ const Generated = {
 			if (contentPath.endsWith('.js')) {
 				const module = await import(contentPath);
 				if (typeof module.generate === 'function') {
-					const doc = await module.generate(contentPath)
+					const doc = await module.generate(contentPath);
 					const doctype = doc.parentNode.doctype?.name || '';
+
+					let hydrationsFound = 0;
+
+					while (pendingHydration.length > 0) {
+						const id = pendingHydration.shift().id;
+						const el = doc.parentNode.getElementById(id)
+						if (el) {
+							dehydrate(el);
+							hydrationsFound++;
+						}
+					}
+
+					if (hydrationsFound) {
+						const script = doc.parentNode.createElement('script');
+						script.src = contentPath.substring((CWD + '/src/ssg').length);
+						doc.parentNode.body.appendChild(script);
+					}
+
 					return [
 						doctype ? `<!doctype ${doctype}>\n` : '',
 						doc.outerHTML

@@ -11,8 +11,8 @@
 	"author": "Jon Wire",
 	"license": "MIT",
 	"scripts": {
-		"build": "npm run build --ws",
-		"clean": "npm run clean --ws",
+		"build": "npm run build --ws --if-present",
+		"clean": "npm run clean --ws --if-present",
 		"start": "npm run start -w sample-default"
 	},
 	"devDependencies": {

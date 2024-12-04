@@ -1,4 +1,4 @@
-import { html, node } from 'wirejs-dom/v2';
+import { html, node, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
 
 /**
  * 
@@ -6,7 +6,13 @@ import { html, node } from 'wirejs-dom/v2';
  * @returns 
  */
 function Greeting(name) {
-	return html`<div>Hello, <b>${name}</b>!</div>`;
+	const self = html`<div id='greeting'>
+		Hello, <b onclick=${
+			() => self.data.name = self.data.name.toUpperCase()
+		}>${text('name', name)}</b>!
+	</div>`;
+
+	return self;
 }
 
 export function generate(path) {
@@ -27,3 +33,7 @@ export function generate(path) {
 
 	return page;
 }
+
+hydrate('greeting', () => Greeting());
+
+console.log('pending hydration', pendingHydration);
