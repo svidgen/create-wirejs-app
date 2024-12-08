@@ -1,8 +1,6 @@
 import { hello } from 'my-api';
 import { html, text, node } from 'wirejs-dom/v2';
 
-// console.log('hello', await hello('world'));
-
 /**
  * Counts down from a given time.
  * 
@@ -11,13 +9,15 @@ import { html, text, node } from 'wirejs-dom/v2';
  */
 export function Countdown(T = 10) {
 	return html`<div>
-		${node('remaining', T, time => {
-			if (time === 0) {
+		${node('remaining', T, timeOrGreeting => {
+			if (typeof timeOrGreeting === 'string') {
+				return html`<div>${timeOrGreeting}</div>`;
+			} else if (timeOrGreeting === 0) {
 				return html`<div><b>ALL DONE!</b></div>`;
-			} else if (time === 1) {
+			} else if (timeOrGreeting === 1) {
 				return html`<div><i>ONE second left!!!</i></div>`;
 			} else {
-				return html`<div>${time} seconds remaining ...</div>`;
+				return html`<div>${timeOrGreeting} seconds remaining ...</div>`;
 			}
 		})}
 	</div>`.onadd(self => {
@@ -25,6 +25,8 @@ export function Countdown(T = 10) {
 			self.data.remaining = self.data.remaining - 1;
 			if (self.data.remaining > 0) {
 				setTimeout(() => tick(), 1000);
+			} else {
+				hello("So and so").then(r => self.data.remaining = r);
 			}
 		};
 		tick();

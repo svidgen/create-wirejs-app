@@ -23,7 +23,7 @@ function App() {
 		${node('greeting', Greeting('World'))}
 		
 		<h4>Countdown</h4>
-		${node('countdown', Countdown())}
+		${node('countdown', Countdown(5))}
 
 	</div>`;
 }
