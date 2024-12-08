@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import process from 'process';
+import process, { argv, env } from 'process';
 import { rimraf } from 'rimraf';
 import fs from 'fs';
 import path from 'path';
@@ -137,7 +137,7 @@ async function compile(watch = false) {
 				static: {
 					directory: path.join(CWD, 'dist')
 				},
-				open: true,
+				open: Boolean(env['open']),
 				proxy: {
 					'/api': {
 						bypass: handleApiResponse
