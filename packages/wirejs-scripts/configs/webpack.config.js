@@ -100,7 +100,6 @@ const Generated = {
 					const doctype = doc.parentNode.doctype?.name || '';
 
 					let hydrationsFound = 0;
-
 					while (pendingHydration.length > 0) {
 						const id = pendingHydration.shift().id;
 						const el = doc.parentNode.getElementById(id)

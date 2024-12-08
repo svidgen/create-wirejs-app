@@ -1,4 +1,5 @@
 import { html, node, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
+import Countdown from '../components/countdown.js';
 
 /**
  * 
@@ -6,13 +7,25 @@ import { html, node, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
  * @returns 
  */
 function Greeting(name) {
-	const self = html`<div id='greeting'>
+	const self = html`<div>
 		Hello, <b onclick=${
 			() => self.data.name = self.data.name.toUpperCase()
 		}>${text('name', name)}</b>!
 	</div>`;
 
 	return self;
+}
+
+function App() {
+	return html`<div id='app'>
+		
+		<h4>Greeting</h4>
+		${node('greeting', Greeting('World'))}
+		
+		<h4>Countdown</h4>
+		${node('countdown', Countdown())}
+
+	</div>`;
 }
 
 export function generate(path) {
@@ -22,18 +35,11 @@ export function generate(path) {
 			<head>
 				<title>test</title>
 			</head>
-			<body>
-				this is a test
-				${node('greeting', Greeting('Jon'))}
-			</body>
+			<body><div>${App()}</div></body>
 		</html>
 	`;
-
-	page.data.greeting = Greeting('World');
 
 	return page;
 }
 
-hydrate('greeting', () => Greeting());
-
-console.log('pending hydration', pendingHydration);
+hydrate('app', App);
