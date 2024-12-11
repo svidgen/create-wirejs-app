@@ -109,6 +109,34 @@ async function handleApiResponse(req, res) {
 	}
 }
 
+async function handleRequest(req, res, compiler) {
+	console.log('received', { url: req.url });
+
+	if (req.url.startsWith('/api')) {
+		return handleApiResponse(req, res, compiler);
+	}
+
+	const fs = compiler.outputFileSystem;
+	const relativePath = req.url === '/' ? 'index.html' : req.url;
+
+	// need to sanitize ... and either figure out how to get webpack
+	// to emit the assets or figure out where to find them....
+	const fullpath = path.join(CWD, 'dist', relativePath);
+
+	if (fullpath.endsWith(".html")) {
+		res.setHeader('Content-Type', 'text/html');
+	} else {
+		res.setHeader('Content-Type', 'text/plain');
+	}
+
+	try {
+		res.send(fs.readFileSync(fullpath));
+	} catch {
+		res.status(404);
+		res.send("404 - File not found");
+	}
+}
+
 async function postData(request) {
 	return new Promise((resolve, reject) => {
 		const buffer = [];
@@ -134,15 +162,19 @@ async function compile(watch = false) {
 			});
 
 			const server = new WebpackDevServer({
-				static: {
+				/* static: {
 					directory: path.join(CWD, 'dist')
-				},
+				}, */
 				open: Boolean(env['open']),
-				proxy: {
-					'/api': {
-						bypass: handleApiResponse
+				devMiddleware: {
+					index: false
+				},
+				proxy: [
+					{
+						context: ['', '/*'],
+						bypass: (req, res) => handleRequest(req, res, compiler)
 					}
-				}
+				]
 			}, compiler);
 
 			logger.log('Starting server...');
