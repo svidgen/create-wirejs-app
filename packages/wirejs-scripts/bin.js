@@ -8,6 +8,10 @@ import path from 'path';
 import webpack from 'webpack';
 import webpackConfigure from './configs/webpack.config.js';
 import WebpackDevServer from 'webpack-dev-server';
+import { log } from 'console';
+
+import { JSDOM } from 'jsdom';
+import { useJSDOM, dehydrate, pendingHydration } from 'wirejs-dom/v2';
 
 const CWD = process.cwd();
 const webpackConfig = webpackConfigure(process.env, process.argv);
@@ -30,7 +34,7 @@ const logger = {
 };
 
 async function exec(cmd) {
-	console.log('exec', cmd);
+	logger.info('exec', cmd);
 	return new Promise((resolve, reject) => {
 		let proc;
 		proc = child_process.exec(cmd, (error, stdout, stderr) => {
@@ -83,18 +87,14 @@ async function handleApiResponse(req, res) {
 	if (url === '/api') {
 		const body = await postData(req);
 		const calls = JSON.parse(body);
-
-		logger.info('request parsed', {
-			url,
-			body,
-			calls
-		});
+		logger.info('handling API request', body);
 
 		const apiPath = path.join(CWD, 'api', 'index.js');
 		const api = await import(`${apiPath}?cache-id=${new Date().getTime()}`);
 
 		const responses = [];
 		for (const call of calls) {
+			logger.info('handling API call', call);
 			responses.push(await callApiMethod(api, call));
 		}
 
@@ -109,32 +109,121 @@ async function handleApiResponse(req, res) {
 	}
 }
 
+function fullPathFrom(req) {
+	const relativePath = req.url === '/' ? 'index.html' : req.url;
+	return path.join(CWD, 'dist', relativePath);
+}
+
+async function tryStaticPath(req, res, fs) {
+	const fullPath = fullPathFrom(req);
+
+	logger.info('checking static', fullPath);
+	if (!fs.existsSync(fullPath)) return false;
+	logger.info('static found');
+
+	if (fullPath.endsWith(".html")) {
+		res.setHeader('Content-Type', 'text/html');
+	} else if (fullPath.endsWith(".js")) {
+		res.setHeader('Content-Type', 'text/javascript');
+	} else {
+		res.setHeader('Content-Type', 'text/plain');
+	}
+
+	try {
+		res.send(fs.readFileSync(fullPath));
+	} catch {
+		res.status(404);
+		res.send("404 - File not found");
+	}
+
+	return true;
+}
+
+async function trySSRScriptPath(req, res, fs) {
+	const srcPath = path.join(CWD, 'dist', 'ssr', req.url);
+
+	logger.info('checking SSR script path', srcPath);
+	if (!fs.existsSync(srcPath)) return false;
+	logger.info('script path found');
+
+	res.setHeader('Content-Type', 'text/javascript');
+
+	try {
+		res.send(fs.readFileSync(srcPath));
+	} catch {
+		res.status(404);
+		res.send("404 - File not found");
+	}
+
+	return true;
+}
+
+async function trySSRPath(req, res, wfs) {
+	const asJSPath = req.url.replace(/\.(\w+)$/, '.js');
+	logger.info('src JS path', asJSPath);
+
+	const fullPath = path.join(CWD, 'dist', 'ssr', asJSPath);
+	const srcPath = path.join(CWD, 'src', 'ssr', asJSPath);
+
+	logger.info('checking ssr', srcPath);
+	if (!fs.existsSync(srcPath)) return false;
+	logger.info('ssr found');
+
+	try {
+		useJSDOM(JSDOM);
+		global.self = global.window;
+		const module = await import(`${srcPath}?cache-id=${new Date().getTime()}`);
+		if (typeof module.generate === 'function') {
+			const doc = await module.generate(fullPath);
+			const doctype = doc.parentNode.doctype?.name || '';
+
+			let hydrationsFound = 0;
+			while (pendingHydration.length > 0) {
+				const id = pendingHydration.shift().id;
+				const el = doc.parentNode.getElementById(id)
+				if (el) {
+					dehydrate(el);
+					hydrationsFound++;
+				}
+			}
+
+			if (hydrationsFound) {
+				const script = doc.parentNode.createElement('script');
+				script.src = asJSPath;
+				doc.parentNode.body.appendChild(script);
+			}
+
+			res.send([
+				doctype ? `<!doctype ${doctype}>\n` : '',
+				doc.outerHTML
+			].join(''));
+
+			return true;
+		} else {
+			logger.info('SSR module missing generate function');
+			return false;
+		}
+	} catch (error) {
+		logger.error('ssr error', error);
+		res.status(404);
+		res.send("404 - File not found");
+	}
+
+	return true;
+}
+
 async function handleRequest(req, res, compiler) {
-	console.log('received', { url: req.url });
+	logger.info('received', JSON.stringify({ url: req.url }, null, 2));
 
 	if (req.url.startsWith('/api')) {
 		return handleApiResponse(req, res, compiler);
 	}
 
 	const fs = compiler.outputFileSystem;
-	const relativePath = req.url === '/' ? 'index.html' : req.url;
 
-	// need to sanitize ... and either figure out how to get webpack
-	// to emit the assets or figure out where to find them....
-	const fullpath = path.join(CWD, 'dist', relativePath);
-
-	if (fullpath.endsWith(".html")) {
-		res.setHeader('Content-Type', 'text/html');
-	} else {
-		res.setHeader('Content-Type', 'text/plain');
-	}
-
-	try {
-		res.send(fs.readFileSync(fullpath));
-	} catch {
-		res.status(404);
-		res.send("404 - File not found");
-	}
+	if (await tryStaticPath(req, res, fs)) return;
+	if (await trySSRScriptPath(req, res, fs)) return;
+	if (await trySSRPath(req, res, fs)) return;
 }
 
 async function postData(request) {
@@ -165,6 +254,9 @@ async function compile(watch = false) {
 				/* static: {
 					directory: path.join(CWD, 'dist')
 				}, */
+				hot: false,
+				liveReload: false,
+				webSocketServer: false,
 				open: Boolean(env['open']),
 				devMiddleware: {
 					index: false

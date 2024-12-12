@@ -142,11 +142,15 @@ export default (env, argv) => {
 		.concat(glob.sync('./src/layouts/**/*.js'))
 		.concat(glob.sync('./src/routes/**/*.js'))
 		.concat(glob.sync('./src/ssg/**/*.js'))
+		.concat(glob.sync('./src/ssr/**/*.js'))
 	;
 
 	const entry = sources.reduce((files, path) => {
 		if (path.match(/src\/ssg/)) {
 			files[path.toString().slice('./src/ssg'.length)] = path;
+		} else if (path.match(/src\/ssr/)) {
+			// keep SSR bundles in the ssr subfolder
+			files[path.toString().slice('./src'.length)] = path;
 		} else if (path.match(/src\/routes/)) {
 			files[path.toString().slice('./src/routes'.length)] = path;
 		} else if (path.match(/src\/layouts/)) {
