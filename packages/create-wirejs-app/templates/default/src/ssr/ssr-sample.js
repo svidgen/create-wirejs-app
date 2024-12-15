@@ -35,7 +35,10 @@ export function generate(path) {
 			<head>
 				<title>test</title>
 			</head>
-			<body><div>${App()}</div></body>
+			<body>
+				<p><a href='/'>SSG page</a></p>
+				${App()}
+			</body>
 		</html>
 	`;
 

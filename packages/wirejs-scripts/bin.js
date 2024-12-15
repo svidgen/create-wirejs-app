@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import process, { argv, env } from 'process';
+import process, { env } from 'process';
 import { rimraf } from 'rimraf';
 import fs from 'fs';
 import path from 'path';
@@ -8,7 +8,6 @@ import path from 'path';
 import webpack from 'webpack';
 import webpackConfigure from './configs/webpack.config.js';
 import WebpackDevServer from 'webpack-dev-server';
-import { log } from 'console';
 
 import { JSDOM } from 'jsdom';
 import { useJSDOM, dehydrate, pendingHydration } from 'wirejs-dom/v2';
@@ -32,22 +31,6 @@ const logger = {
 		console.warn('wirejs', ...items);
 	}
 };
-
-async function exec(cmd) {
-	logger.info('exec', cmd);
-	return new Promise((resolve, reject) => {
-		let proc;
-		proc = child_process.exec(cmd, (error, stdout, stderr) => {
-			processes.splice(processes.indexOf(proc), 1);
-			if (error || stderr) {
-				reject({ error, stderr });
-			} else {
-				resolve(stdout);
-			}
-		});
-		processes.push(proc);
-	});
-}
 
 /**
  * 
@@ -251,9 +234,6 @@ async function compile(watch = false) {
 			});
 
 			const server = new WebpackDevServer({
-				/* static: {
-					directory: path.join(CWD, 'dist')
-				}, */
 				hot: false,
 				liveReload: false,
 				webSocketServer: false,
