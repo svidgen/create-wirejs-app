@@ -1,4 +1,4 @@
-import { html, node, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
+import { html, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
 import Countdown from '../components/countdown.js';
 
 /**
@@ -16,19 +16,19 @@ function Greeting(name) {
 	return self;
 }
 
-function App() {
+async function App() {
 	return html`<div id='app'>
 		
 		<h4>Greeting from the server</h4>
-		${node('greeting', Greeting('World'))}
+		${Greeting('World')}
 		
 		<h4>Countdown</h4>
-		${node('countdown', Countdown(5))}
+		${await Countdown(5)}
 
 	</div>`;
 }
 
-export function generate(path) {
+export async function generate(path) {
 	const page = html`
 		<!doctype html>
 		<html>
@@ -37,7 +37,7 @@ export function generate(path) {
 			</head>
 			<body>
 				<p><a href='/'>SSG page</a></p>
-				${App()}
+				${await App()}
 			</body>
 		</html>
 	`;

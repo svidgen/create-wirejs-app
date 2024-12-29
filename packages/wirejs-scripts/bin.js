@@ -40,15 +40,18 @@ const logger = {
  */
 async function callApiMethod(api, call) {
 	try {
-		const [scope, ...restOfScope] = call.method.split('.');
-		if (typeof api[scope] === 'function' && restOfScope.length === 0) {
+		const [scope, ...rest] = call.method;
+		logger.info('api method parsed', { scope, rest });
+		if (typeof api[scope] === 'function' && rest.length === 0) {
+			logger.info('api method resolved. invoking...');
 			return {
 				data: await api[scope](...call.args)
 			};
-		} else if (typeof api[scope] === 'object' && restOfScope.length > 0) {
+		} else if (typeof api[scope] === 'object' && rest.length > 0) {
+			logger.info('nested scope found');
 			return callApiMethod(api[scope], {
 				...call,
-				method: restOfScope.join('.'),
+				method: rest,
 			});
 		} else {
 			return { error: "Method not found" };

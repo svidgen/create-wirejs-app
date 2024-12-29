@@ -1,4 +1,4 @@
-import { hello } from 'my-api';
+import { hello, widgetFactory } from 'my-api';
 import { html, text, node } from 'wirejs-dom/v2';
 
 /**
@@ -7,7 +7,7 @@ import { html, text, node } from 'wirejs-dom/v2';
  * @param {number} from - The time to count down "from".
  * @returns 
  */
-export function Countdown(T = 10) {
+export async function Countdown(T = 10) {
 	return html`<div>
 		${node('remaining', T, timeOrGreeting => {
 			if (typeof timeOrGreeting === 'string') {
