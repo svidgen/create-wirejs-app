@@ -12,14 +12,14 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/svidgen/wirejs-scripts.git"
+		"url": "git+https://github.com/svidgen/create-wirejs-app.git"
 	},
 	"author": "Jon Wire",
 	"license": "AGPL-3.0-only",
 	"bugs": {
-		"url": "https://github.com/svidgen/wirejs-scripts/issues"
+		"url": "https://github.com/svidgen/create-wirejs-app/issues"
 	},
-	"homepage": "https://github.com/svidgen/wirejs-scripts#readme",
+	"homepage": "https://github.com/svidgen/create-wirejs-app#readme",
 	"dependencies": {
 		"copy-webpack-plugin": "^10.2.4",
 		"css-loader": "^5.2.0",

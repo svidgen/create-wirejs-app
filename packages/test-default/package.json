@@ -1,8 +1,8 @@
 {
-	"name": "sample-default",
+	"name": "test-default",
 	"private": "true",
 	"version": "1.0.0",
-	"description": "Creates an app using create-wirejs-app for testing/demonstration purposes.",
+	"description": "Creates an app using create-wirejs-app for testing.",
 	"author": "Jon Wire",
 	"license": "MIT",
 	"scripts": {

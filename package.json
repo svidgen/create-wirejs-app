@@ -3,7 +3,7 @@
 	"workspaces": [
 		"packages/create-wirejs-app",
 		"packages/wirejs-scripts",
-		"packages/sample-default"
+		"packages/test-default"
 	],
 	"private": "true",
 	"version": "1.0.0",
@@ -13,8 +13,8 @@
 	"scripts": {
 		"build": "npm run build --ws --if-present",
 		"clean": "npm run clean --ws --if-present",
-		"start": "npm run start -w sample-default",
-		"start-open": "open=1 npm run start -w sample-default"
+		"start": "npm run start -w test-default",
+		"start-open": "open=1 npm run start -w test-default"
 	},
 	"devDependencies": {
 		"rimraf": "^6.0.1"
