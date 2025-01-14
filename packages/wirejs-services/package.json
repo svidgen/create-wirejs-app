@@ -1,16 +1,13 @@
 {
-	"name": "wirejs-adapters",
+	"name": "wirejs-services",
 	"version": "1.0.0",
-	"description": "Basic adapters for wirejs apps",
+	"description": "Basic services for wirejs apps",
 	"type": "module",
 	"main": "./lib/index.js",
 	"exports": {
 		".": "./lib/index.js"
 	},
-	"scripts": {
-		"build": "echo \"Nothing to build\"",
-		"clean": "echo \"Nothing to clean\""
-	},
+	"scripts": {},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/svidgen/create-wirejs-app.git"
@@ -20,7 +17,5 @@
 	"bugs": {
 		"url": "https://github.com/svidgen/create-wirejs-app/issues"
 	},
-	"homepage": "https://github.com/svidgen/create-wirejs-app#readme",
-	"dependencies": {
-	}
+	"homepage": "https://github.com/svidgen/create-wirejs-app#readme"
 }

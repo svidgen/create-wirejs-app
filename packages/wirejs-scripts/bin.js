@@ -11,6 +11,7 @@ import WebpackDevServer from 'webpack-dev-server';
 
 import { JSDOM } from 'jsdom';
 import { useJSDOM, dehydrate, pendingHydration } from 'wirejs-dom/v2';
+import { requiresContext, Context, CookieJar } from 'wirejs-services';
 
 const CWD = process.cwd();
 const webpackConfig = webpackConfigure(process.env, process.argv);
@@ -36,13 +37,19 @@ const logger = {
  * 
  * @param {object} api
  * @param {{method: string, args: any[]}} call
+ * @param {Context} context
  * @returns {Promise<any>}
  */
-async function callApiMethod(api, call) {
+async function callApiMethod(api, call, context) {
 	try {
 		const [scope, ...rest] = call.method;
 		logger.info('api method parsed', { scope, rest });
-		if (typeof api[scope] === 'function' && rest.length === 0) {
+		if (requiresContext(api[scope])) {
+			logger.info('wrapped api found. unwrapping...');
+			const wrappedApi = api[scope](context);
+			logger.info('wrapped api', wrappedApi);
+			return callApiMethod({ [scope]: wrappedApi }, call, context);
+		} else if (typeof api[scope] === 'function' && rest.length === 0) {
 			logger.info('api method resolved. invoking...');
 			return {
 				data: await api[scope](...call.args)
@@ -52,7 +59,7 @@ async function callApiMethod(api, call) {
 			return callApiMethod(api[scope], {
 				...call,
 				method: rest,
-			});
+			}, context);
 		} else {
 			return { error: "Method not found" };
 		}
@@ -70,6 +77,9 @@ async function handleApiResponse(req, res) {
 		baseUrl, originalUrl, trailers
 	} = req;
 
+	const cookies = new CookieJar(req.cookies || {});
+	const context = new Context(cookies);
+
 	if (url === '/api') {
 		const body = await postData(req);
 		const calls = JSON.parse(body);
@@ -81,7 +91,18 @@ async function handleApiResponse(req, res) {
 		const responses = [];
 		for (const call of calls) {
 			logger.info('handling API call', call);
-			responses.push(await callApiMethod(api, call));
+			responses.push(await callApiMethod(api, call, context));
+		}
+
+		logger.info('setting cookies', cookies.getSetCookies());
+		for (const cookie of cookies.getSetCookies()) {
+			const cookieOptions = {
+				...(cookie.maxAge !== undefined ? { maxAge: cookie.maxAge * 1000 } : {}),
+				httpOnly: !!cookie.httpOnly,
+				secure: !!cookie.secure
+			};
+			logger.info('setting cookie', cookie.name, cookie.value, cookieOptions);
+			res.cookie(cookie.name, cookie.value, cookieOptions);
 		}
 
 		res.send(JSON.stringify(

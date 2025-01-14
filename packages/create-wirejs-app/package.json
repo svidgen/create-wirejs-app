@@ -17,9 +17,6 @@
 	"files": [
 		"bin.js",
 		"package.json",
-		"template/src/*",
-		"template/static/*",
-		"template/_gitignore",
-		"template/package.json*"
+		"templates/*"
 	]
 }

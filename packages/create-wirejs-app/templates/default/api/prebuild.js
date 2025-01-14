@@ -1,4 +1,5 @@
 import { writeFileSync } from 'fs';
+import { requiresContext } from 'wirejs-services';
 
 const indexModule = await import('./index.js');
 
@@ -27,7 +28,10 @@ function buildCallTree(obj, nesting = []) {
 	const nestingText = Array(nesting.length).fill('\t').join('');
 	const output = [];
 	for (const [name, item] of Object.entries(obj)) {
-		if (typeof item === 'function') {
+		if (requiresContext(item)) {
+			const unwrapped = { [name]: item({}) };
+			output.push(buildCallTree(unwrapped, [...nesting]));
+		} else if (typeof item === 'function') {
 			if (atRoot) {
 				output.push(apiExportCall(name));
 			} else {
