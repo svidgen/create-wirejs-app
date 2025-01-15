@@ -1,3 +1,7 @@
+async function simulateLatency() {
+	return new Promise(unsleep => setTimeout(unsleep, 100));
+}
+
 /**
  * @type {Map<string, FileService>}
  */
@@ -17,7 +21,7 @@ export class FileService {
 	 * 	id: string
 	 * }} options
 	 */
-	constructor({ id }) {
+	constructor(id) {
 		this.id = id;
 		services.set(id, this);
 	}
@@ -27,6 +31,7 @@ export class FileService {
 	 * @return {Promise<string>} file data as a string
 	 */
 	async read(filename) {
+		await simulateLatency();
 		const data = this.files.get(filename);
 		if (data === undefined) throw new Error(`File not found`);
 		return data;
@@ -38,6 +43,7 @@ export class FileService {
 	 * @param {string} data 
 	 */
 	async write(filename, data) {
+		await simulateLatency();
 		this.files.set(filename, data);
 	}
 
@@ -46,6 +52,7 @@ export class FileService {
 	 * @param {string} filename 
 	 */
 	async delete(filename) {
+		await simulateLatency();
 		this.files.delete(filename);
 	}
 
@@ -53,11 +60,15 @@ export class FileService {
 	 * 
 	 * @param {{
 	 * 	prefix?: string
-	 * }} options
+	 * }} [options]
 	 */
-	async * list({ prefix }) {
+	async * list({ prefix } = {}) {
+		await simulateLatency();
+		let count = 0;
 		for (const name of this.files.keys()) {
-			if (name.startsWith(prefix)) yield name;
+			count++;
+			if (count % 1000 == 0) await simulateLatency();
+			if (prefix === undefined || name.startsWith(prefix)) yield name;
 		}
 	}
 }

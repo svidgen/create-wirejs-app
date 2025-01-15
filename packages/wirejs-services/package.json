@@ -17,5 +17,8 @@
 	"bugs": {
 		"url": "https://github.com/svidgen/create-wirejs-app/issues"
 	},
-	"homepage": "https://github.com/svidgen/create-wirejs-app#readme"
+	"homepage": "https://github.com/svidgen/create-wirejs-app#readme",
+	"dependencies": {
+		"jose": "^5.9.6"
+	}
 }

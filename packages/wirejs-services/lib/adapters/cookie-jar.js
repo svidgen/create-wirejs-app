@@ -46,7 +46,7 @@ export class CookieJar {
 	 * @returns {Cookie | undefined}
 	 */
 	get(name) {
-		return {...this.#cookies.get(name)};
+		return this.#cookies[name] ? { ...this.#cookies[name] } : undefined;
 	}
 
 	/**
