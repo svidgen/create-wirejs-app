@@ -77,7 +77,7 @@ async function handleApiResponse(req, res) {
 		baseUrl, originalUrl, trailers
 	} = req;
 
-	const cookies = new CookieJar(req.cookies || {});
+	const cookies = new CookieJar(req.headers.cookie);
 	const context = new Context(cookies);
 
 	if (url === '/api') {

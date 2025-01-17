@@ -9,7 +9,7 @@ const authService = new AuthenticationService('core-users');
 
 export const auth = withContext(context => ({
 	getState: () => {
-		console.log('CALL getState');
+		console.log('CALL getState', context);
 		return authService.getState(context.cookies);
 	},
 

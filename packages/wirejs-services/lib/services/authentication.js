@@ -54,7 +54,7 @@ const signingSecret = new Secret('auth-signing-secret');
 
 /**
  * @typedef {{
- * 	name: string;
+ * 	key: string;
  * 	inputs: Record<string, string | number | boolean>;
  * 	verb: string;
  * }} PerformActionParameter
@@ -126,27 +126,30 @@ export class AuthenticationService {
 	 * @returns {Promise<AuthenticationBaseState>}
 	 */
 	async getBaseState(cookies) {
-		const idCookie = cookies.get(this.#cookieName)?.value;
-		const idPayload = idCookie ? (
-			await jose.jwtVerify(idCookie, await this.signingSecret)
-		) : undefined;
-		const user = idPayload ? idPayload.payload.sub : undefined;
+		let idCookie, idPayload, user;
+
+		try {
+			idCookie = cookies.get(this.#cookieName)?.value;
+			idPayload = idCookie ? (
+				await jose.jwtVerify(idCookie, await this.signingSecret)
+			) : undefined;
+			user = idPayload ? idPayload.payload.sub : undefined;
+		} catch (err) {
+			// jose doesn't like our cookie.
+			console.error(err);
+		}
 
 		console.log({idCookie, idPayload, user});
 
 		if (user) {
 			return {
-				state: {
-					state: 'authenticated',
-					user
-				}
+				state: 'authenticated',
+				user
 			}
 		} else {
 			return {
-				state: {
-					state: 'unauthenticated',
-					user: undefined,
-				}
+				state: 'unauthenticated',
+				user: undefined,
 			}
 		}
 	}
@@ -159,11 +162,12 @@ export class AuthenticationService {
 		await simulateBaseLatency();
 		const state = await this.getBaseState(cookies);
 		if (state.state === 'authenticated') {
+			if (this.#keepalive) this.setBaseState(state);
 			return {
 				state,
 				actions: {
 					signout: {
-						link: "Sign out"
+						name: "Sign out"
 					},
 					changepassword: {
 						name: "Change password",
@@ -182,7 +186,7 @@ export class AuthenticationService {
 					signup: {
 						name: "Sign Up",
 						inputs: {
-							username: 'string',
+							username: 'text',
 							password: 'password',
 						},
 						buttons: ['Sign Up']
@@ -190,7 +194,7 @@ export class AuthenticationService {
 					signin: {
 						name: "Sign In",
 						inputs: {
-							username: 'string',
+							username: 'text',
 							password: 'password',
 						},
 						buttons: ['Sign In']
@@ -206,7 +210,7 @@ export class AuthenticationService {
 	 * @param {string | undefined} [user]
 	 */
 	async setBaseState(cookies, user) {
-		if (user) {
+		if (!user) {
 			cookies.delete(this.#cookieName);
 		} else {
 			const jwt = await new jose.SignJWT({})
@@ -221,7 +225,7 @@ export class AuthenticationService {
 				value: jwt,
 				httpOnly: true,
 				secure: true,
-				maxAge: this.duration
+				maxAge: this.#duration
 			});
 		}	
 	}
@@ -251,11 +255,11 @@ export class AuthenticationService {
 	 * @param {PerformActionParameter} params
 	 * @returns {Promise<AuthenticationState | AuthenticationError[]>}
 	 */
-	async setState(cookies, { name, inputs, verb: _verb }) {
-		if (name === 'signout') {
+	async setState(cookies, { key, inputs, verb: _verb }) {
+		if (key === 'signout') {
 			await simulateBaseLatency();
 			this.setBaseState(cookies, undefined);
-		} else if (name === 'signup') {
+		} else if (key === 'signup') {
 			await simulateAuthenticateLatency();
 			const errors = this.missingFieldErrors(inputs, ['username', 'password']);
 			if (errors) {
@@ -270,8 +274,10 @@ export class AuthenticationService {
 					id: inputs.username,
 					password: inputs.password
 				});
+				await this.setBaseState(cookies, inputs.username);
+				return this.getState(cookies);
 			}
-		} else if (name === 'signin') {
+		} else if (key === 'signin') {
 			await simulateAuthenticateLatency();
 			const user = this.#users.get(inputs.username);
 			if (!user) {
@@ -283,6 +289,7 @@ export class AuthenticationService {
 				// a real authentication service will use password hashing.
 				// this is an in-memory just-for-testing user pool.
 				this.setBaseState(cookies, inputs.username);
+				return this.getState(cookies);
 			}
 		} else {
 			await simulateBaseLatency();

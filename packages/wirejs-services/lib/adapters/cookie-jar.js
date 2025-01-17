@@ -24,12 +24,20 @@ export class CookieJar {
 	/**
 	 * Initialize
 	 * 
-	 * @param {Record<string, Cookie>} cookies 
+	 * @param {string | undefined} cookie
 	 */
-	constructor(cookies) {
-		for (const cookie of Object.values(cookies)) {
-			this.#cookies[cookie.name] = {...cookie};
-		}
+	constructor(cookie) {
+		this.#cookies = Object.fromEntries(
+			(cookie || '')
+				.split(/;/g)
+				.map(c => {
+					const [k, v] = c.split('=').map(p => decodeURIComponent(p.trim()));
+					return [k, {
+						name: k,
+						value: v
+					}];
+				})
+		);
 	}
 
 	/**

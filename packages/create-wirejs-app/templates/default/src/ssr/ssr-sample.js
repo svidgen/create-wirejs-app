@@ -1,6 +1,6 @@
 import { html, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
 import Countdown from '../components/countdown.js';
-import { hateous } from '../components/hateoas.js';
+import { hateoas } from '../components/hateoas.js';
 import { auth } from 'my-api';
 
 /**
@@ -28,7 +28,7 @@ async function App() {
 		${await Countdown(5)}
 
 		<h4>HATEOAS</h4>
-		${hateous(auth)}
+		${hateoas(auth)}
 
 	</div>`;
 }
