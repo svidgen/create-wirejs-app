@@ -27,7 +27,8 @@ export const auth = withContext(context => ({
 * @returns {Promise<string>} A friendly greeting.
 */
 export const hello = withContext(context => async (name) => {
-	return `${defaultGreeting()}, ${name}.`;
+	const { user } = await authService.getBaseState(context.cookies);
+	return `${defaultGreeting()}, ${user ? `<b>${user}</b>` : '<i>Anonymous</i>'}.`;
 });
 
 // export const addTodo = async (todo) => {

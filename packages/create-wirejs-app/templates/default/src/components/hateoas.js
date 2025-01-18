@@ -96,7 +96,6 @@ export const hateoas = (stateManager) => html`<hateoas>
 					<div>message: ${state.message}</div>
 					<div>actions: ${Object.entries(state.actions).map(([key, action]) => {
 						return hateoasAction({key, ...action}, async act => {
-							console.log(act, self.getState);
 							self.renderState(await stateManager.setState(act));
 						})
 					})}</div>
