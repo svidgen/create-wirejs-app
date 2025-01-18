@@ -3,11 +3,11 @@ import { Secret } from '../resources/secret.js';
 import { CookieJar } from '../adapters/cookie-jar.js';
 
 function simulateBaseLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 100));
+	return new Promise(unsleep => setTimeout(unsleep, 50));
 }
 
 function simulateAuthenticateLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 1000));
+	return new Promise(unsleep => setTimeout(unsleep, 500));
 }
 
 const signingSecret = new Secret('auth-signing-secret');
@@ -40,15 +40,16 @@ const signingSecret = new Secret('auth-signing-secret');
 
 /**
  * @typedef {{
- * 	state: 'authenticated' | 'unauthenticated',
- * 	user: string | undefined
+ * 	state: 'authenticated' | 'unauthenticated';
+ * 	user: string | undefined;
  * }} AuthenticationBaseState
  */
 
 /**
  * @typedef {{
- * 	state: AuthenticationBaseState,
- * 	actions: Record<string, Action>
+ * 	state: AuthenticationBaseState;
+ * 	message?: string;
+ * 	actions: Record<string, Action>;
  * }} AuthenticationState
  */
 
@@ -103,7 +104,11 @@ export class AuthenticationService {
 		this.#duration = duration || ONE_WEEK;
 		this.#keepalive = !!keepalive;
 		this.#cookieName = cookie ?? 'identity';
-		services.set(id, this);
+		if (services.has(id)) {
+			this.#users = services.get(id).#users;
+		} else {
+			services.set(id, this);
+		}
 	}
 
 	async getSigningSecret() {
@@ -253,22 +258,25 @@ export class AuthenticationService {
 	/**
 	 * @param {CookieJar} cookies
 	 * @param {PerformActionParameter} params
-	 * @returns {Promise<AuthenticationState | AuthenticationError[]>}
+	 * @returns {Promise<AuthenticationState | { errors: AuthenticationError[] }>}
 	 */
 	async setState(cookies, { key, inputs, verb: _verb }) {
 		if (key === 'signout') {
 			await simulateBaseLatency();
-			this.setBaseState(cookies, undefined);
+			await this.setBaseState(cookies, undefined);
+			return this.getState(cookies);
 		} else if (key === 'signup') {
 			await simulateAuthenticateLatency();
 			const errors = this.missingFieldErrors(inputs, ['username', 'password']);
 			if (errors) {
-				return errors;
+				return { errors };
 			} else if (this.#users.has(inputs.username)) {
-				return [{
-					field: 'username',
-					message: 'User already exists.'
-				}];
+				return { errors: 
+						[{
+						field: 'username',
+						message: 'User already exists.'
+					}]
+				};
 			} else {
 				this.#users.set(inputs.username, {
 					id: inputs.username,
@@ -281,21 +289,59 @@ export class AuthenticationService {
 			await simulateAuthenticateLatency();
 			const user = this.#users.get(inputs.username);
 			if (!user) {
-				return [{
-					field: 'username',
-					message: `User doesn't exist.`
-				}];
+				return { errors:
+					[{
+						field: 'username',
+						message: `User doesn't exist.`
+					}]
+				};
 			} else if (user.password === inputs.password) {
 				// a real authentication service will use password hashing.
 				// this is an in-memory just-for-testing user pool.
 				this.setBaseState(cookies, inputs.username);
 				return this.getState(cookies);
+			} else {
+				return { errors:
+					[{
+						field: 'password',
+						message: "Incorrect password."
+					}]
+				};
+			}
+		} else if (key === 'changepassword') {
+			await simulateAuthenticateLatency();
+			const state = await this.getBaseState(cookies);
+			const user = this.#users.get(state.user);
+			if (!user) {
+				return { errors:
+					[{
+						field: 'username',
+						message: `You're not signed in as a recognized user.`
+					}]
+				};
+			} else if (user.password === inputs.existingPassword) {
+				this.#users.set(user.id, {
+					...user,
+					password: inputs.newPassword
+				});
+				return {
+					message: "Password updated.",
+					...await this.getState(cookies)
+				};
+			} else {
+				return { errors: [{
+						field: 'existingPassword',
+						message: "The provided existing password is incorrect."
+					}]
+				};
 			}
 		} else {
 			await simulateBaseLatency();
-			return [{
-				message: 'Unrecognized authentication action.'
-			}];
+			return { errors: 
+				[{
+					message: 'Unrecognized authentication action.'
+				}]
+			};
 		}
 	}
 }

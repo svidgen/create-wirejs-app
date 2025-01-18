@@ -3,6 +3,7 @@ import { attribute, html, node } from 'wirejs-dom/v2';
 /**
  * @typedef {{
  * 	state: Object;
+ * 	message?: string;
  * 	actions: Actions;
  * }} State
  * 
@@ -85,11 +86,14 @@ export const hateoasAction = (action, act) => {
  */
 export const hateoas = (stateManager) => html`<hateoas>
 		${node('state', html`<span>Loading ...</span>`)}
-	</hateoas>`.extend(self => {
-		return {
-			renderState(state) {
+	</hateoas>`.extend(self => ({
+		renderState(state) {
+			if (state.errors) {
+				alert(state.errors.map(e => e.message).join("\n\n"));
+			} else {
 				self.data.state = html`<div>
 					<div>state: ${JSON.stringify(state.state)}</div>
+					<div>message: ${state.message}</div>
 					<div>actions: ${Object.entries(state.actions).map(([key, action]) => {
 						return hateoasAction({key, ...action}, async act => {
 							console.log(act, self.getState);
@@ -97,9 +101,9 @@ export const hateoas = (stateManager) => html`<hateoas>
 						})
 					})}</div>
 				</div>`;
-			},
+			}
 		}
-	}).onadd(async (self) => {
+	})).onadd(async (self) => {
 		self.renderState(await stateManager.getState())
 	})
 ;
