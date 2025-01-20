@@ -1,6 +1,7 @@
 import * as jose from 'jose';
 import { Secret } from '../resources/secret.js';
 import { CookieJar } from '../adapters/cookie-jar.js';
+import { withContext } from '../adapters/context.js';
 
 function simulateBaseLatency() {
 	return new Promise(unsleep => setTimeout(unsleep, 50));
@@ -343,5 +344,18 @@ export class AuthenticationService {
 				}]
 			};
 		}
+	}
+
+	buildApi() {
+		return withContext(context => ({
+			getState: () => this.getState(context.cookies),
+
+			/**
+			 * 
+			 * @param {Parameters<typeof this['setState']>[1]} options 
+			 * @returns 
+			 */
+			setState: (options) => this.setState(context.cookies, options),
+		}));
 	}
 }

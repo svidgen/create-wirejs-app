@@ -1,6 +1,7 @@
 import { html, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
 import Countdown from '../components/countdown.js';
-import { hateoas } from '../components/hateoas.js';
+import { authenticator } from '../components/authenticator.js';
+import { accountMenu } from '../components/account-menu.js';
 import { auth } from 'my-api';
 
 /**
@@ -20,16 +21,13 @@ function Greeting(name) {
 
 async function App() {
 	return html`<div id='app'>
-		
+		<div style='float: right;'>${accountMenu(auth)}</div>
+
 		<h4>Greeting from the server</h4>
 		${Greeting('World')}
 		
 		<h4>Countdown</h4>
 		${await Countdown(5)}
-
-		<h4>HATEOAS</h4>
-		${hateoas(auth)}
-
 	</div>`;
 }
 

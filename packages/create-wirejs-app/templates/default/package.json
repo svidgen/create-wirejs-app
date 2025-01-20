@@ -12,7 +12,8 @@
 	},
 	"devDependencies": {
 		"highlight.js": "^11.5.1",
-		"wirejs-scripts": "file:../../wirejs-scripts"
+		"wirejs-scripts": "file:../../wirejs-scripts",
+		"wirejs-services": "file:../../wirejs-services"
 	},
 	"scripts": {
 		"prebuild": "npm run prebuild --workspaces --if-present",
