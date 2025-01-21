@@ -1,4 +1,4 @@
-import { hello, widgetFactory } from 'my-api';
+import { hello } from 'my-api';
 import { html, text, node } from 'wirejs-dom/v2';
 
 /**

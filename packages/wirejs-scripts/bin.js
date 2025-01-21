@@ -64,7 +64,7 @@ async function callApiMethod(api, call, context) {
 			return { error: "Method not found" };
 		}
 	} catch (error) {
-		return { error };
+		return { error: error.message };
 	}
 }
 

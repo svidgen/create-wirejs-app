@@ -23,7 +23,11 @@ export class FileService {
 	 */
 	constructor(id) {
 		this.id = id;
-		services.set(id, this);
+		if (services.has(id)) {
+			this.files = services.get(id).files;
+		} else {
+			services.set(id, this);
+		}
 	}
 
 	/**

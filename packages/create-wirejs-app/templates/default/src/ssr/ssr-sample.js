@@ -1,34 +1,45 @@
-import { html, text, hydrate, pendingHydration } from 'wirejs-dom/v2';
-import Countdown from '../components/countdown.js';
-import { authenticator } from '../components/authenticator.js';
+import { html, text, hydrate, node, list, attribute } from 'wirejs-dom/v2';
 import { accountMenu } from '../components/account-menu.js';
-import { auth } from 'my-api';
+import { auth, todos } from 'my-api';
 
-/**
- * 
- * @param {string} name 
- * @returns 
- */
-function Greeting(name) {
+function Todos() {
 	const self = html`<div>
-		Hello, <b onclick=${
-			() => self.data.name = self.data.name.toUpperCase()
-		}>${text('name', name)}</b>!
-	</div>`;
-
+		<h4>Your Todos</h4>
+		<ol>${list('todos', todo => html`<li>${todo}</li>`)}</ol>
+		<div>
+			<form onsubmit=${event => {
+				event.preventDefault();
+				self.data.todos.push(self.data.newTodo);
+				self.data.newTodo = '';
+				todos.write(self.data.todos);
+			}}>
+				<input type='text' value=${attribute('newTodo', '')} />
+				<input type='submit' value='Add' />
+			</form>
+		</div>
+	<div>`.onadd(async self => {
+		self.data.todos = await todos.read();
+	});
 	return self;
 }
 
 async function App() {
-	return html`<div id='app'>
-		<div style='float: right;'>${accountMenu(auth)}</div>
+	const accountMenuNode = accountMenu(auth);
 
-		<h4>Greeting from the server</h4>
-		${Greeting('World')}
-		
-		<h4>Countdown</h4>
-		${await Countdown(5)}
+	accountMenuNode.data.onchange(async state => {
+		if (state.state.user) {
+			self.data.content = Todos();
+		} else {
+			self.data.content = html`<div>You need to sign in to add your todo list.</div>`;
+		}
+	});
+
+	const self = html`<div id='app'>
+		<div style='float: right;'>${node('auth', () => accountMenuNode)}</div>
+		${node('content', html`<div>Loading ...</div>`)}
 	</div>`;
+
+	return self;
 }
 
 export async function generate(path) {

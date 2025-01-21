@@ -17,6 +17,11 @@ export const accountMenu = (api) => {
 		expanded: false
 	};
 
+	/**
+	 * @type {Set<(state: AuthState) => any>}
+	 */
+	const listeners = new Set();
+
 	const listenForClose = event => {
 		if (!self.data.menu.contains(event.target)) {
 			uiState.expanded = false;
@@ -36,6 +41,13 @@ export const accountMenu = (api) => {
 	const authenticatorNode = authenticator(api);
 	authenticatorNode.data.onchange(state => {
 		self.data.user = state.state.user || '';
+		for (const listener of listeners) {
+			try {
+				listener(state);
+			} catch (error) {
+				console.error("Error calling auth state listener.");
+			}
+		}
 	});
 
 	const self = html`<accountmenu style='display: inline-block;'>
@@ -69,7 +81,23 @@ export const accountMenu = (api) => {
 	</accountmenu>`.onadd(async self => {
 		const state = await api.getState();
 		self.data.user = state.state.user || '';
-	});
+	}).extend(self => ({
+		data: {
+			/**
+			 * @param {(state: AuthState) => any} callback
+			 */
+			onchange: (callback) => {
+				listeners.add(callback);
+			},
+
+			/**
+			 * @param {(state: AuthState) => any} callback
+			 */
+			removeonchange: (callback) => {
+				listeners.delete(callback);
+			},
+		}
+	}));
 
 	return self;
 };
