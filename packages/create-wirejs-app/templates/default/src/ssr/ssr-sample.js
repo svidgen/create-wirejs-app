@@ -2,64 +2,10 @@ import { html, text, hydrate, node, list, attribute } from 'wirejs-dom/v2';
 import { accountMenu } from '../components/account-menu.js';
 import { auth, todos } from 'my-api';
 
-function Todos() {
-	const save = async () => {
-		try {
-			await todos.write(self.data.todos);
-		} catch (error) {
-			alert(error);
-		}
-	}
-
-	const remove = todo => {
-		self.data.todos = self.data.todos.filter(t => t.id !== todo.id);
-		save();
-	}
-
-	const newid = () => crypto.randomUUID();
-	
-	const self = html`<div>
-		<h4>Your Todos</h4>
-		<ol>${list('todos', todo => html`<li>
-			${todo.text} : <span
-				style='color: darkred; font-weight: bold; cursor: pointer;'
-				onclick=${() => remove(todo)}
-			>X</span>
-		</li>`)}</ol>
-		<div>
-			<form onsubmit=${event => {
-				event.preventDefault();
-				self.data.todos.push({ id: newid(), text: self.data.newTodo });
-				self.data.newTodo = '';
-				save();
-			}}>
-				<input type='text' value=${attribute('newTodo', '')} />
-				<input type='submit' value='Add' />
-			</form>
-		</div>
-	<div>`.onadd(async self => {
-		self.data.todos = await todos.read();
-	});
-	return self;
-}
-
 async function App() {
-	const accountMenuNode = accountMenu(auth);
-
-	accountMenuNode.data.onchange(async state => {
-		if (state.state.user) {
-			self.data.content = Todos();
-		} else {
-			self.data.content = html`<div>You need to sign in to add your todo list.</div>`;
-		}
-	});
-
-	const self = html`<div id='app'>
-		<div style='float: right;'>${node('auth', () => accountMenuNode)}</div>
-		${node('content', html`<div>Loading ...</div>`)}
+	return html`<div id='app'>
+		This is generated dynamically on the server at runtime.
 	</div>`;
-
-	return self;
 }
 
 export async function generate(path) {
@@ -67,10 +13,11 @@ export async function generate(path) {
 		<!doctype html>
 		<html>
 			<head>
-				<title>test</title>
+				<title>SSR Sample</title>
 			</head>
 			<body>
-				<p><a href='/'>SSG page</a></p>
+				<p><a href='/'>Home</a></p>
+				<h1>SSR Sample</h1>
 				${await App()}
 			</body>
 		</html>

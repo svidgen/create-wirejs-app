@@ -1,48 +1,28 @@
-import { html, text, hydrate } from 'wirejs-dom/v2';
-import Countdown from '../components/countdown.js';
-
-/**
- * 
- * @param {string} name 
- * @returns 
- */
-function Greeting(name) {
-	const self = html`<div>
-		Hello, <b onclick=${
-			() => self.data.name = self.data.name.toUpperCase()
-		}>${text('name', name)}</b>!
-	</div>`;
-
-	return self;
-}
+import { html, hydrate } from 'wirejs-dom/v2';
 
 async function App() {
 	return html`<div id='app'>
-		
-		<h4>Greeting</h4>
-		${Greeting('World')}
-		
-		<h4>Countdown</h4>
-		${await Countdown(5)}
-
 	</div>`;
 }
 
-export async function generate(path) {
+export async function generate() {
 	const page = html`
 		<!doctype html>
 		<html>
 			<head>
-				<title>test</title>
+				<title>Welcome!</title>
 			</head>
 			<body>
-				<p><a href='/ssr-sample.html'>SSR page</a></p>
-				${await App()}
+				<h1>Welcome!</h1>
+				<p>This is your wirejs app!</p>
+				<p>It comes with some sample API methods and pages.</p>
+				<p>
+				<ul>
+					<li><a href='/todo-app.html'>Todo App</a></li>
+					<li><a href='/ssr-sample.html'>SSR page</a></li>
+				</ul>
 			</body>
 		</html>
 	`;
-
 	return page;
 }
-
-hydrate('app', App);
