@@ -48,13 +48,20 @@ export const todos = withContext(context => ({
 			throw new Error("Unauthorized");
 		}
 
-		if (!Array.isArray(todos) || !todos.every(todo => typeof todo === 'string')) {
+		if (!Array.isArray(todos)) {
 			throw new Error("Invalid todos!");
 		}
 
-		console.log({ user, todos });
+		if (!todos.every(todo =>
+			typeof todo.id === 'string'
+			&& typeof todo.text === 'string')
+		) {
+			throw new Error("Invalid todos!");
+		}
 
-		await userTodos.write(`${user}/todos.json`, JSON.stringify(todos));
+		const finalTodos = todos.map(todo => ({ id: todo.id, text: todo.text }));
+		await userTodos.write(`${user}/todos.json`, JSON.stringify(finalTodos));
+		
 		return true;
 	}
 }));

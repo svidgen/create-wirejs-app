@@ -62,6 +62,12 @@ const baseClient = dedent(1, /* js */ `
 			body: JSON.stringify([{method, args:[...args]}])
 		});
 		const body = await response.json();
+
+		const error = body[0].error;
+		if (error) {
+			throw new Error(error);
+		}
+
 		const value = body[0].data;
 		return value;
 	};

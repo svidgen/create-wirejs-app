@@ -3,15 +3,35 @@ import { accountMenu } from '../components/account-menu.js';
 import { auth, todos } from 'my-api';
 
 function Todos() {
+	const save = async () => {
+		try {
+			await todos.write(self.data.todos);
+		} catch (error) {
+			alert(error);
+		}
+	}
+
+	const remove = todo => {
+		self.data.todos = self.data.todos.filter(t => t.id !== todo.id);
+		save();
+	}
+
+	const newid = () => crypto.randomUUID();
+	
 	const self = html`<div>
 		<h4>Your Todos</h4>
-		<ol>${list('todos', todo => html`<li>${todo}</li>`)}</ol>
+		<ol>${list('todos', todo => html`<li>
+			${todo.text} : <span
+				style='color: darkred; font-weight: bold; cursor: pointer;'
+				onclick=${() => remove(todo)}
+			>X</span>
+		</li>`)}</ol>
 		<div>
 			<form onsubmit=${event => {
 				event.preventDefault();
-				self.data.todos.push(self.data.newTodo);
+				self.data.todos.push({ id: newid(), text: self.data.newTodo });
 				self.data.newTodo = '';
-				todos.write(self.data.todos);
+				save();
 			}}>
 				<input type='text' value=${attribute('newTodo', '')} />
 				<input type='submit' value='Add' />
