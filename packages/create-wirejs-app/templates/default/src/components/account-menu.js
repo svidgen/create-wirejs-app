@@ -79,7 +79,7 @@ export const accountMenu = (api) => {
 			padding: 0.5rem;
 		'>${node('authenticator', authenticatorNode)}</div>
 	</accountmenu>`.onadd(async self => {
-		const state = await api.getState();
+		const state = await api.getState(true);
 		self.data.user = state.state.user || '';
 	}).extend(self => ({
 		data: {

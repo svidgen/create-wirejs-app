@@ -5,7 +5,7 @@ import { auth, todos } from 'my-api';
 function Todos() {
 	const save = async () => {
 		try {
-			await todos.write(self.data.todos);
+			await todos.write(true, self.data.todos);
 		} catch (error) {
 			alert(error);
 		}
@@ -38,7 +38,7 @@ function Todos() {
 			</form>
 		</div>
 	<div>`.onadd(async self => {
-		self.data.todos = await todos.read();
+		self.data.todos = await todos.read(true);
 	});
 	return self;
 }

@@ -44,24 +44,23 @@ async function callApiMethod(api, call, context) {
 	try {
 		const [scope, ...rest] = call.method;
 		logger.info('api method parsed', { scope, rest });
-		if (requiresContext(api[scope])) {
-			logger.info('wrapped api found. unwrapping...');
-			const wrappedApi = api[scope](context);
-			logger.info('wrapped api', wrappedApi);
-			return callApiMethod({ [scope]: wrappedApi }, call, context);
-		} else if (typeof api[scope] === 'function' && rest.length === 0) {
+		if (rest.length === 0) {
 			logger.info('api method resolved. invoking...');
-			return {
-				data: await api[scope](...call.args)
-			};
-		} else if (typeof api[scope] === 'object' && rest.length > 0) {
+			if (requiresContext(api[scope])) {
+				return {
+					data: await api[scope](context, ...call.args.slice(1))
+				};
+			} else {
+				return {
+					data: await api[scope](...call.args)
+				};
+			}
+		} else {
 			logger.info('nested scope found');
 			return callApiMethod(api[scope], {
 				...call,
 				method: rest,
 			}, context);
-		} else {
-			return { error: "Method not found" };
 		}
 	} catch (error) {
 		return { error: error.message };

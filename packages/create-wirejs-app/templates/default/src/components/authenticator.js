@@ -91,7 +91,7 @@ export const authenticator = (stateManager) => {
 					<div>${state.message || ''}</div>
 					<div>${Object.entries(state.actions).map(([key, action]) => {
 						return authenticatoraction({key, ...action}, async act => {
-							self.renderState(await stateManager.setState(act));
+							self.renderState(await stateManager.setState(true, act));
 						});
 					})}</div>
 				</div>`;
@@ -105,7 +105,7 @@ export const authenticator = (stateManager) => {
 			}
 		}
 	})).onadd(async (self) => {
-		self.renderState(await stateManager.getState())
+		self.renderState(await stateManager.getState(true))
 	}).extend(self => ({
 		data: {
 			/**
