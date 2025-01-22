@@ -81,9 +81,18 @@ export class Context {
 	cookies;
 
 	/**
-	 * @param {CookieJar} cookies
+	 * @type {URL} location
 	 */
-	constructor(cookies) {
+	location;
+
+	/**
+	 * @param {{
+	 * 	cookies: CookieJar;
+	 * 	location: URL;
+	 * }}
+	 */
+	constructor({ cookies, location }) {
 		this.cookies = cookies;
+		this.location = location;
 	}
 }

@@ -6,7 +6,7 @@ import { attribute, html, node } from 'wirejs-dom/v2';
  * @typedef {Awaited<ReturnType<AuthStateApi['getState']>>} AuthState
  * @typedef {AuthState['actions'][string]} AuthStateAction
  * @typedef {Parameters<AuthStateApi['setState']>[0]} AuthStateActionInput
- */
+  */
 
 /**
  * @param {AuthStateAction} action
@@ -62,7 +62,7 @@ export const authenticatoraction = (action, act) => {
 }
 
 /**
- * @param {AuthStateApi} stateManager 
+ * @param {AuthStateApi} stateManager
  * @returns 
  */
 export const authenticator = (stateManager) => {

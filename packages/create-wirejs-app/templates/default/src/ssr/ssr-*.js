@@ -4,11 +4,17 @@ import { auth, todos } from 'my-api';
 
 async function App() {
 	return html`<div id='app'>
-		This is generated dynamically on the server at runtime.
+		<div style='float: right;'>${node('auth', accountMenu(auth))}</div>
+		<p>This is generated dynamically on the server at runtime.</p>
 	</div>`;
 }
 
-export async function generate(path) {
+/**
+ * 
+ * @param {import('wirejs-services').Context} context 
+ * @returns 
+ */
+export async function generate(context) {
 	const page = html`
 		<!doctype html>
 		<html>

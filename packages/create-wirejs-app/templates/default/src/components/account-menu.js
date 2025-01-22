@@ -7,6 +7,7 @@ import { authenticator } from './authenticator.js';
  * @typedef {Awaited<ReturnType<AuthStateApi['getState']>>} AuthState
  * @typedef {AuthState['actions'][string]} AuthStateAction
  * @typedef {Parameters<AuthStateApi['setState']>[0]} AuthStateActionInput
+ * @typedef {import('wirejs-services').Context} Context
  */
 
 /**
@@ -33,7 +34,6 @@ export const accountMenu = (api) => {
 	const updateStyleToMatchState = () => {
 		self.data.menu.style.display = uiState.expanded ? '' : 'none';
 		const position = self.getBoundingClientRect();
-		console.log({position});
 		self.data.menu.style.top = `${position.bottom + 1}px`;
 		self.data.menu.style.right = `${document.body.clientWidth - position.right + 16}px`;
 	};

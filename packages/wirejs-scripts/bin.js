@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
 import process, { env } from 'process';
-import { rimraf } from 'rimraf';
+import http from 'http';
 import fs from 'fs';
 import path from 'path';
 
 import webpack from 'webpack';
 import webpackConfigure from './configs/webpack.config.js';
-import WebpackDevServer from 'webpack-dev-server';
+import { rimraf } from 'rimraf';
 
 import { JSDOM } from 'jsdom';
-import { useJSDOM, dehydrate, pendingHydration } from 'wirejs-dom/v2';
+import { useJSDOM } from 'wirejs-dom/v2';
 import { requiresContext, Context, CookieJar } from 'wirejs-services';
 
 const CWD = process.cwd();
@@ -32,6 +32,19 @@ const logger = {
 		console.warn('wirejs', ...items);
 	}
 };
+
+/**
+ * 
+ * @param {http.IncomingMessage} req 
+ * @returns 
+ */
+function createContext(req) {
+	const { url, headers } = req;
+	const origin = headers.origin || `http://${headers.host}`;
+	const location = new URL(`${origin}${url}`);
+	const cookies = new CookieJar(headers.cookie);
+	return new Context({ cookies, location });
+}
 
 /**
  * 
@@ -68,7 +81,10 @@ async function callApiMethod(api, call, context) {
 }
 
 /**
- * @type {WebpackDevServer.ByPass}
+ * 
+ * @param {http.IncomingMessage} req 
+ * @param {http.ServerResponse} res 
+ * @returns 
  */
 async function handleApiResponse(req, res) {
 	const {
@@ -76,8 +92,7 @@ async function handleApiResponse(req, res) {
 		baseUrl, originalUrl, trailers
 	} = req;
 
-	const cookies = new CookieJar(req.headers.cookie);
-	const context = new Context(cookies);
+	const context = createContext(req);
 
 	if (url === '/api') {
 		const body = await postData(req);
@@ -93,34 +108,50 @@ async function handleApiResponse(req, res) {
 			responses.push(await callApiMethod(api, call, context));
 		}
 
-		logger.info('setting cookies', cookies.getSetCookies());
-		for (const cookie of cookies.getSetCookies()) {
-			const cookieOptions = {
-				...(cookie.maxAge !== undefined ? { maxAge: cookie.maxAge * 1000 } : {}),
-				httpOnly: !!cookie.httpOnly,
-				secure: !!cookie.secure
-			};
+		logger.info('setting cookies', context.cookies.getSetCookies());
+		for (const cookie of context.cookies.getSetCookies()) {
+			const cookieOptions = [];
+			if (cookie.maxAge) cookieOptions.push(`Max-Age=${cookie.maxAge}`);
+			if (cookie.httpOnly) cookieOptions.push('HttpOnly');
+			if (cookie.secure) cookieOptions.push('Secure');
+			
 			logger.info('setting cookie', cookie.name, cookie.value, cookieOptions);
-			res.cookie(cookie.name, cookie.value, cookieOptions);
+			res.appendHeader(
+				'Set-Cookie',
+				`${cookie.name}=${cookie.value}; ${cookieOptions.join('; ')}`
+			);
 		}
 
-		res.send(JSON.stringify(
+		res.setHeader('Content-Type', 'application/json; charset=utf-8')
+		res.end(JSON.stringify(
 			responses
 		));
 	} else {
 		logger.error('Bad endpoint given', { url });
 
-		res.status(404);
-		res.send("404 - Endpoint not found");
+		res.statusCode = 404;
+		res.end("404 - Endpoint not found");
 	}
 }
 
+/**
+ * 
+ * @param {http.IncomingMessage} req 
+ * @returns 
+ */
 function fullPathFrom(req) {
 	const relativePath = req.url === '/' ? 'index.html' : req.url;
 	return path.join(CWD, 'dist', relativePath);
 }
 
-async function tryStaticPath(req, res, fs) {
+
+/**
+ * 
+ * @param {http.IncomingMessage} req 
+ * @param {http.ServerResponse} res 
+ * @returns 
+ */
+async function tryStaticPath(req, res) {
 	const fullPath = fullPathFrom(req);
 
 	logger.info('checking static', fullPath);
@@ -128,69 +159,121 @@ async function tryStaticPath(req, res, fs) {
 	logger.info('static found');
 
 	if (fullPath.endsWith(".html")) {
-		res.setHeader('Content-Type', 'text/html');
+		res.setHeader('Content-Type', 'text/html; charset=utf-8');
 	} else if (fullPath.endsWith(".js")) {
-		res.setHeader('Content-Type', 'text/javascript');
+		res.setHeader('Content-Type', 'text/javascript; charset=utf-8');
 	} else {
-		res.setHeader('Content-Type', 'text/plain');
+		res.setHeader('Content-Type', 'text/plain; charset=utf-8');
 	}
 
 	try {
-		res.send(fs.readFileSync(fullPath));
+		res.end(fs.readFileSync(fullPath));
 	} catch {
-		res.status(404);
-		res.send("404 - File not found");
+		res.statusCode = 404;
+		res.end("404 - File not found (b)");
 	}
 
 	return true;
 }
 
-async function trySSRScriptPath(req, res, fs) {
-	const srcPath = path.join(CWD, 'dist', 'ssr', req.url);
+/**
+ * Compare two strings by length for sorting in order of increasing length.
+ * 
+ * @param {string} a 
+ * @param {string} b 
+ * @returns 
+ */
+function byLength(a, b) {
+    return a.length - b.length;
+}
 
-	logger.info('checking SSR script path', srcPath);
-	if (!fs.existsSync(srcPath)) return false;
-	logger.info('script path found');
+/**
+ * @param {string} pattern - string pattern, where `*` matches anything
+ * @param {string} text 
+ * @returns 
+ */
+function globMatch(pattern, text) {
+    const parts = pattern.split('*');
+    const regex = new RegExp(parts.join('.+'));
+    return regex.test(text);
+}
+
+/**
+ * 
+ * @param {Context} context 
+ * @param {string} [forceExt]
+ */
+function routeSSR(context, forceExt) {
+	const SSR_ROOT = path.join(CWD, 'dist', 'ssr');
+	const asJSPath = forceExt ?
+		context.location.pathname.replace(/\.(\w+)$/, `.${forceExt}`)
+		: context.location.pathname
+	;
+	const allHandlers = fs.readdirSync(SSR_ROOT, { recursive: true })
+		.filter(p => p.endsWith('.js'))
+		.map(p => `/${p}`)
+	;
+	const matchingHandlers = allHandlers.filter(h => globMatch(h, asJSPath));
+	const match = matchingHandlers.sort(byLength).pop();
+
+	if (match) {
+		return path.join(SSR_ROOT, match);
+	}
+}
+
+/**
+ * @param {http.IncomingMessage} req 
+ * @param {http.ServerResponse} res 
+ * @returns 
+ */
+async function trySSRScriptPath(req, res) {
+	const context = createContext(req);
+	const srcPath = routeSSR(context);
+	if (!srcPath) return false;
+
+	logger.info('SSR handler associated script found', srcPath);
 
 	res.setHeader('Content-Type', 'text/javascript');
 
 	try {
-		res.send(fs.readFileSync(srcPath));
+		res.end(fs.readFileSync(srcPath));
 	} catch {
-		res.status(404);
-		res.send("404 - File not found");
+		res.statusCode = 404;
+		res.end("404 - File not found (c)");
 	}
 
 	return true;
 }
 
-async function trySSRPath(req, res, wfs) {
-	const asJSPath = req.url.replace(/\.(\w+)$/, '.js');
-	logger.info('src JS path', asJSPath);
+/**
+ * 
+ * @param {http.IncomingMessage} req
+ * @param {http.ServerResponse} res
+ * @returns 
+ */
+async function trySSRPath(req, res) {
+	const context = createContext(req);
 
-	const fullPath = path.join(CWD, 'dist', 'ssr', asJSPath);
-	const srcPath = path.join(CWD, 'src', 'ssr', asJSPath);
+	const asJSPath = context.location.pathname.replace(/\.(\w+)$/, '.js');
+	const srcPath = routeSSR(context, 'js');
+	if (!srcPath) return false;
 
-	logger.info('checking ssr', srcPath);
-	if (!fs.existsSync(srcPath)) return false;
-	logger.info('ssr found');
+	logger.info('SSR handler found', srcPath);
 
 	try {
 		useJSDOM(JSDOM);
 		global.self = global.window;
-		const module = await import(`${srcPath}?cache-id=${new Date().getTime()}`);
+		await import(`${srcPath}?cache-id=${new Date().getTime()}`);
+		const module = self.exports;
+		console.log({module});
 		if (typeof module.generate === 'function') {
-			const doc = await module.generate(fullPath);
+			const doc = await module.generate(context);
 			const doctype = doc.parentNode.doctype?.name || '';
 
 			let hydrationsFound = 0;
-			while (pendingHydration.length > 0) {
-				const id = pendingHydration.shift().id;
-				const el = doc.parentNode.getElementById(id)
-				if (el) {
-					dehydrate(el);
-					hydrationsFound++;
-				}
+			while (globalThis.pendingDehydrations?.length > 0) {
+				globalThis.pendingDehydrations.shift()(doc);
+				hydrationsFound++;
 			}
 
 			if (hydrationsFound) {
@@ -199,7 +282,8 @@ async function trySSRPath(req, res, wfs) {
 				doc.parentNode.body.appendChild(script);
 			}
 
-			res.send([
+			res.setHeader('Content-type', 'text/html; charset=utf-8')
+			res.end([
 				doctype ? `<!doctype ${doctype}>\n` : '',
 				doc.outerHTML
 			].join(''));
@@ -211,13 +295,20 @@ async function trySSRPath(req, res, wfs) {
 		}
 	} catch (error) {
 		logger.error('ssr error', error);
-		res.status(404);
-		res.send("404 - File not found");
+		res.statusCode = 404;
+		res.end("404 - File not found (a)");
 	}
 
 	return true;
 }
 
+/**
+ * 
+ * @param {http.IncomingMessage} req 
+ * @param {http.ServerResponse} res 
+ * @param {any} compiler 
+ * @returns 
+ */
 async function handleRequest(req, res, compiler) {
 	logger.info('received', JSON.stringify({ url: req.url }, null, 2));
 
@@ -225,13 +316,22 @@ async function handleRequest(req, res, compiler) {
 		return handleApiResponse(req, res, compiler);
 	}
 
-	const fs = compiler.outputFileSystem;
+	// const fs = compiler.outputFileSystem;
 
 	if (await tryStaticPath(req, res, fs)) return;
 	if (await trySSRScriptPath(req, res, fs)) return;
 	if (await trySSRPath(req, res, fs)) return;
+
+	// if we've made it this far, we don't have what you're looking for
+	res.statusCode = '404';
+	res.end('404 - Not found');
 }
 
+/**
+ * 
+ * @param {http.IncomingMessage} request 
+ * @returns 
+ */
 async function postData(request) {
 	return new Promise((resolve, reject) => {
 		const buffer = [];
@@ -248,34 +348,18 @@ async function postData(request) {
 };
 
 async function compile(watch = false) {
-	const stats = await new Promise((resolve, reject) => {
+	const stats = await new Promise(async (resolve, reject) => {
 		let compiler;
 		if (watch) {
-			compiler = webpack({
+			webpack({
 				...webpackConfig,
-				mode: 'development'
-			});
-
-			const server = new WebpackDevServer({
-				hot: false,
-				liveReload: false,
-				webSocketServer: false,
-				open: Boolean(env['open']),
-				devMiddleware: {
-					index: false
-				},
-				proxy: [
-					{
-						context: ['', '/*'],
-						bypass: (req, res) => handleRequest(req, res, compiler)
-					}
-				]
-			}, compiler);
+				mode: 'development',
+				watch: true
+			}, () => {}).run(() => {});
 
 			logger.log('Starting server...');
-			server.start().then(() => {
-				resolve({});
-			});
+			const server = http.createServer(handleRequest);
+			server.listen(3000);
 		} else {
 			logger.log('instantiating webpack compiler');
 			compiler = webpack(webpackConfig);

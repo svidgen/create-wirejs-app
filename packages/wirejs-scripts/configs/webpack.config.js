@@ -1,4 +1,4 @@
-import { useJSDOM, dehydrate, pendingHydration } from 'wirejs-dom/v2';
+import { useJSDOM } from 'wirejs-dom/v2';
 import fs from 'fs';
 import path from 'path';
 import glob from 'glob';
@@ -100,13 +100,9 @@ const Generated = {
 					const doctype = doc.parentNode.doctype?.name || '';
 
 					let hydrationsFound = 0;
-					while (pendingHydration.length > 0) {
-						const id = pendingHydration.shift().id;
-						const el = doc.parentNode.getElementById(id)
-						if (el) {
-							dehydrate(el);
-							hydrationsFound++;
-						}
+					while (globalThis.pendingDehydrations?.length > 0) {
+						globalThis.pendingDehydrations.shift()(doc);
+						hydrationsFound++;
 					}
 
 					if (hydrationsFound) {
@@ -177,8 +173,13 @@ export default (env, argv) => {
 		},
 		entry,
 		output: {
-			filename: "[name]"
+			filename: "[name]",
+			library: {
+				type: 'global',
+				name: 'exports'
+			}
 		},
+		target: 'web',
 		devtool,
 		plugins: [
 
@@ -281,7 +282,7 @@ export default (env, argv) => {
 					// 	priority: 3,
 					// },
 				],
-			})
+			}),
 		],
 		module: {
 			rules: [
