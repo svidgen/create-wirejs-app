@@ -17,6 +17,6 @@
 		"rimraf": "*",
 		"create-wirejs-app": "*",
 		"wirejs-scripts": "*",
-		"wirejs-services": "*"
+		"wirejs-resources": "*"
 	}
 }

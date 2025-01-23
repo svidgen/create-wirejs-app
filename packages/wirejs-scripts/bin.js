@@ -11,7 +11,7 @@ import { rimraf } from 'rimraf';
 
 import { JSDOM } from 'jsdom';
 import { useJSDOM } from 'wirejs-dom/v2';
-import { requiresContext, Context, CookieJar } from 'wirejs-services';
+import { requiresContext, Context, CookieJar } from '../wirejs-resources/lib/types.js';
 
 const CWD = process.cwd();
 const webpackConfig = webpackConfigure(process.env, process.argv);

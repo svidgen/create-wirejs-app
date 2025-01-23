@@ -1,4 +1,4 @@
-import { AuthenticationService, FileService, withContext } from 'wirejs-services';
+import { AuthenticationService, FileService, withContext } from 'wirejs-resources';
 import { defaultGreeting } from '../src/lib/sample-lib.js';
 
 const userTodos = new FileService('userTodoApp');

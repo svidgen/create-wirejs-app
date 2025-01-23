@@ -3,7 +3,7 @@
 	"workspaces": [
 		"packages/create-wirejs-app",
 		"packages/wirejs-scripts",
-		"packages/wirejs-services",
+		"packages/wirejs-resources",
 		"packages/test-default"
 	],
 	"private": "true",
