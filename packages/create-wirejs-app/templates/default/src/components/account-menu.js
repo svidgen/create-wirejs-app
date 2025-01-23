@@ -24,11 +24,24 @@ export const accountMenu = (api) => {
 	const listeners = new Set();
 
 	const listenForClose = event => {
-		if (!self.data.menu.contains(event.target)) {
-			uiState.expanded = false;
-			updateStyleToMatchState();
-			document.removeEventListener('click', listenForClose);
+		if (
+			(event.type === 'click' && !self.data.menu.contains(event.target))
+			|| (event.type === 'keyup' && event.key === 'Escape')
+		) {
+			close()
 		}
+	};
+
+	const close = () => {
+		uiState.expanded = false;
+		updateStyleToMatchState();
+		document.removeEventListener('click', listenForClose);
+		document.removeEventListener('keyup', listenForClose);
+	};
+
+	const removeListenForClose = () => {
+		document.removeEventListener('click', listenForClose);
+		document.removeEventListener('keyup', listenForClose);
 	};
 
 	const updateStyleToMatchState = () => {
@@ -41,6 +54,7 @@ export const accountMenu = (api) => {
 	const authenticatorNode = authenticator(api);
 	authenticatorNode.data.onchange(state => {
 		self.data.user = state.state.user || '';
+		close();
 		for (const listener of listeners) {
 			try {
 				listener(state);
@@ -65,18 +79,24 @@ export const accountMenu = (api) => {
 				uiState.expanded = !uiState.expanded;
 				updateStyleToMatchState();
 				if (uiState.expanded) {
-					setTimeout(() => document.addEventListener('click', listenForClose), 1);
+					authenticatorNode.data.focus();
+					setTimeout(() => {
+						document.addEventListener('click', listenForClose);
+						document.addEventListener('keyup', listenForClose);
+					}, 1);
 				} else {
-					document.removeEventListener('click', listenForClose);
+					removeListenForClose()
 				}
 			}}
 		>☰</div>
 		<div ${id('menu')} style='
 			display: none;
 			position: absolute;
-			border: 1px solid silver;
-			border-radius: 0.5rem;
+			border: 1px solid gray;
+			border-radius: 0.25rem;
+			background-color: white;
 			padding: 0.5rem;
+			box-shadow: -0.125rem 0.125rem 0.25rem lightgray;
 		'>${node('authenticator', authenticatorNode)}</div>
 	</accountmenu>`.onadd(async self => {
 		const state = await api.getState(true);

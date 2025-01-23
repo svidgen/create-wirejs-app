@@ -13,50 +13,63 @@ import { attribute, html, node } from 'wirejs-dom/v2';
  * @param {(act: AuthStateActionInput) => void} act
  */
 export const authenticatoraction = (action, act) => {
-	const inputs = Object.entries(action.inputs || []).map(([name, type]) => {
+	const inputs = Object.entries(action.inputs || []).map(([name, { label, type }]) => {
+		const id = `input_${Math.floor(Math.random() * 1_000_000)}`;
 		const input = html`<div>
-			<label>${name}</label>
-			<input name=${name} type=${type} value=${attribute('value', '')} />
+			<label for=${id}>${label}</label>
+			<br />
+			<input
+				id=${id}
+				name=${name}
+				type=${type}
+				value=${attribute('value', '')}
+				style='width: calc(100% - 1rem); margin-bottom: 0.5rem;'
+			/>
 		</div>`.extend(self => ({
 			data: { name }
 		}));
 		return input;
 	});
 
-	const buttons = action.buttons?.map(b => html`
-		<button type='submit' value='${b}'>${b}</button>`
-	);
+	const buttons = action.buttons?.map(b => html`<p>
+		<button type='submit' value='${b}'>${b}</button>
+	</p>`);
+
 	const link = buttons ? undefined : [
-		html`<a
-			style='cursor: pointer;'
+		html`<p><a
+			style='cursor: pointer; font-weight: bold;'
 			onclick=${() => act({ key: action.key })}
-		>${action.name}</a>`
+		>${action.name}</a></p>`
 	];
+
 	const actors = link ?? buttons;
 
 	if (action.inputs && Object.keys(action.inputs).length > 0) {
 		return html`<authenticatoraction>
 			<div>
-				<h4>${action.name}</h4>
-				<form onsubmit=${evt => {
-					evt.preventDefault();
-					act({
-						key: action.key,
-						verb: evt.submitter?.value,
-						inputs: Object.fromEntries(inputs.map(input => ([
-							input.data.name,
-							input.data.value
-						])))
-					});
-				}}>
+				<h4 style='margin-top: 1rem; margin-bottom: 0.5rem;'>${action.name}</h4>
+				<form
+					onsubmit=${evt => {
+						evt.preventDefault();
+						act({
+							key: action.key,
+							verb: evt.submitter?.value,
+							inputs: Object.fromEntries(inputs.map(input => ([
+								input.data.name,
+								input.data.value
+							])))
+						});
+					}}
+				>
 					${inputs}
 					${actors}
 				</form>
+				<hr style='width: 33%; height: 1px; border: none; background: silver;' />
 			</div>
 		</authenticatoraction>`;
 	} else {
 		return html`<authenticatoraction>
-			<span>${actors}</span>
+			${actors}
 		</authenticatoraction>`;
 	}
 }
@@ -76,7 +89,7 @@ export const authenticator = (stateManager) => {
 	 */
 	let lastKnownState = undefined;
 
-	const self = html`<authenticator>
+	const self = html`<authenticator style='display: block; min-width: 15em;'>
 		${node('state', html`<span>Loading ...</span>`)}
 	</authenticator>`.extend(self => ({
 		/**
@@ -120,6 +133,10 @@ export const authenticator = (stateManager) => {
 			 */
 			removeonchange: (callback) => {
 				listeners.delete(callback);
+			},
+
+			focus: () => {
+				[...self.getElementsByTagName('input')].shift()?.focus();
 			},
 
 			get lastKnownState() {

@@ -22,9 +22,9 @@ const signingSecret = new Secret('auth-signing-secret');
 
 /**
  * @typedef {{
- * 	name: string;
+ * 	label: string;
  * 	type: 'string' | 'password' | 'number' | 'boolean';
- * 	isRequired: boolean;
+ * 	isRequired?: boolean;
  * }} AuthenticationInput
  */
 
@@ -34,7 +34,7 @@ const signingSecret = new Secret('auth-signing-secret');
  * 	title?: string;
  * 	description?: string;
  * 	message?: string;
- * 	inputs?: AuthenticationInput[];
+ * 	inputs?: Record<string, AuthenticationInput>;
  * 	buttons?: string[];
  * }} Action
  */
@@ -172,39 +172,57 @@ export class AuthenticationService {
 			return {
 				state,
 				actions: {
+					changepassword: {
+						name: "Change Password",
+						inputs: {
+							existingPassword: {
+								label: 'Old Password',
+								type: 'password',
+							},
+							newPassword: {
+								label: 'New Password',
+								type: 'password',
+							}
+						},
+						buttons: ['Change Password']
+					},
 					signout: {
 						name: "Sign out"
 					},
-					changepassword: {
-						name: "Change password",
-						inputs: {
-							existingPassword: 'password',
-							newPassword: 'password'
-						},
-						buttons: ['Change Password']
-					}
 				}
 			}
 		} else {
 			return {
 				state,
 				actions: {
-					signup: {
-						name: "Sign Up",
-						inputs: {
-							username: 'text',
-							password: 'password',
-						},
-						buttons: ['Sign Up']
-					},
 					signin: {
 						name: "Sign In",
 						inputs: {
-							username: 'text',
-							password: 'password',
+							username: {
+								label: 'Username',
+								type: 'text',
+							},
+							password: {
+								label: 'Password',
+								type: 'password',
+							},
 						},
 						buttons: ['Sign In']
-					}
+					},
+					signup: {
+						name: "Sign Up",
+						inputs: {
+							username: {
+								label: 'Username',
+								type: 'text',
+							},
+							password: {
+								label: 'Password',
+								type: 'password',
+							},
+						},
+						buttons: ['Sign Up']
+					},
 				}
 			}
 		}
