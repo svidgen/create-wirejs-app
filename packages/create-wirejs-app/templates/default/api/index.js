@@ -2,6 +2,7 @@ import { AuthenticationService, FileService, withContext } from 'wirejs-services
 import { defaultGreeting } from '../src/lib/sample-lib.js';
 
 const userTodos = new FileService('userTodoApp');
+const wikiPages = new FileService('wikiPages');
 const authService = new AuthenticationService('core-users');
 
 export const auth = authService.buildApi();
@@ -61,7 +62,38 @@ export const todos = withContext(context => ({
 
 		const finalTodos = todos.map(todo => ({ id: todo.id, text: todo.text }));
 		await userTodos.write(`${user}/todos.json`, JSON.stringify(finalTodos));
-		
+
+		return true;
+	}
+}));
+
+function normalizeWikiPageFilename(page) {
+	return page.replace(/[^-_a-zA-Z0-9/]/g, '-') + '.md';
+}
+
+export const wiki = withContext(context => ({
+	async read(page) {		
+		const filename = normalizeWikiPageFilename(page);
+		try {
+			return await wikiPages.read(filename);
+		} catch (error) {
+			console.log("returning empty content");
+			return undefined;
+		}
+	},
+	/**
+	 * @param {string[]} todos 
+	 */
+	async write(page, content) {
+		const user = await currentUser(context);
+
+		if (!user) {
+			throw new Error("Unauthorized");
+		}
+
+		const filename = normalizeWikiPageFilename(page);
+		await wikiPages.write(filename, content);
+
 		return true;
 	}
 }));

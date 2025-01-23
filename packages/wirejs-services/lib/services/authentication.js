@@ -4,11 +4,11 @@ import { CookieJar } from '../adapters/cookie-jar.js';
 import { withContext } from '../adapters/context.js';
 
 function simulateBaseLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 50));
+	return new Promise(unsleep => setTimeout(unsleep, 10));
 }
 
 function simulateAuthenticateLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 500));
+	return new Promise(unsleep => setTimeout(unsleep, 50));
 }
 
 const signingSecret = new Secret('auth-signing-secret');

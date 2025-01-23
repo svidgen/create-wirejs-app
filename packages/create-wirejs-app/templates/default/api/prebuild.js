@@ -14,10 +14,23 @@ const apiCode = Object.keys(indexModule)
 
 const baseClient = dedent(1, /* js */ `
 	async function wirejsCallApi(method, ...args) {
+		let cookieHeader = {};
+		if (typeof args[0]?.cookies?.getAll === 'function') {
+			const cookies = args[0]?.cookies?.getAll();
+			cookieHeader = typeof cookies === 'object'
+				? {
+					Cookie: Object.entries(cookies).map(kv => kv.join('=')).join('; ')
+				}
+				: {};
+		}
+
 		const response = await fetch("/api", {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify([{method, args:[...args]}])
+			headers: {
+				'Content-Type': 'application/json',
+				...cookieHeader
+			},
+			body: JSON.stringify([{method, args:[...args]}]),
 		});
 		const body = await response.json();
 

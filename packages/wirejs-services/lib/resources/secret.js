@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 
 async function simulateLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 50));
+	return new Promise(unsleep => setTimeout(unsleep, 10));
 }
 
 /**

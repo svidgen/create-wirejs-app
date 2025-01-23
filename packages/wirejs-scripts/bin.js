@@ -33,6 +33,19 @@ const logger = {
 	}
 };
 
+const oldFetch = globalThis.fetch;
+globalThis.fetch = (url, ...args) => {
+	if (typeof url === 'string') {
+		try {
+			return fetch(new URL(url), ...args);
+		} catch {
+			return fetch(`http://localhost:3000${url}`, ...args);
+		}
+	} else {
+		return oldFetch(url, ...args);
+	}
+}
+
 /**
  * 
  * @param {http.IncomingMessage} req 
@@ -396,7 +409,6 @@ const engine = {
 		logger.log('recreated dist folder');
 
 		try {
-
 			await compile(watch);
 			logger.log('finished compile');
 		} catch (err) {

@@ -1,5 +1,5 @@
 async function simulateLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 100));
+	return new Promise(unsleep => setTimeout(unsleep, 10));
 }
 
 /**

@@ -19,7 +19,7 @@ export async function generate() {
 				<p>
 				<ul>
 					<li><a href='/todo-app.html'>Todo App</a></li>
-					<li><a href='/ssr-sample.html'>SSR page</a></li>
+					<li><a href='/simple-wiki/index.html'>SSR page</a></li>
 				</ul>
 			</body>
 		</html>
