@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import process, { env } from 'process';
+import process from 'process';
 import http from 'http';
 import fs from 'fs';
 import path from 'path';

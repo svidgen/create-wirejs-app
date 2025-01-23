@@ -1,6 +1,8 @@
-async function simulateLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 10));
-}
+import process from 'process';
+import fs from 'fs';
+import path from 'path';
+
+const CWD = process.cwd();
 
 /**
  * @type {Map<string, FileService>}
@@ -11,11 +13,6 @@ export class FileService {
 	id;
 
 	/**
-	 * @type {Map<string, string>}
-	 */
-	files = new Map();
-
-	/**
 	 * 
 	 * @param {{
 	 * 	id: string
@@ -23,22 +20,28 @@ export class FileService {
 	 */
 	constructor(id) {
 		this.id = id;
-		if (services.has(id)) {
-			this.files = services.get(id).files;
-		} else {
+		if (!services.has(id)) {
 			services.set(id, this);
 		}
 	}
 
 	/**
+	 * @param {string} filename 
+	 * @returns 
+	 */
+	#fullNameFor(filename) {
+		const sanitizedId = this.id.replace('~', '-').replace(/\.+/g, '.');
+		const sanitizedName = filename.replace('~', '-').replace(/\.+/g, '.');
+		return path.join(CWD, 'temp', 'wirejs-services', 'files', sanitizedId, sanitizedName);
+	}
+
+	/**
 	 * @param {string} filename
+	 * @param {BufferEncoding} [encoding]
 	 * @return {Promise<string>} file data as a string
 	 */
-	async read(filename) {
-		await simulateLatency();
-		const data = this.files.get(filename);
-		if (data === undefined) throw new Error(`File not found`);
-		return data;
+	async read(filename, encoding = 'utf8') {
+		return fs.promises.readFile(this.#fullNameFor(filename), { encoding });
 	}
 
 	/**
@@ -47,8 +50,9 @@ export class FileService {
 	 * @param {string} data 
 	 */
 	async write(filename, data) {
-		await simulateLatency();
-		this.files.set(filename, data);
+		const fullname = this.#fullNameFor(filename);
+		await fs.promises.mkdir(path.dirname(fullname), { recursive: true });
+		return fs.promises.writeFile(fullname, data);
 	}
 
 	/**
@@ -56,8 +60,7 @@ export class FileService {
 	 * @param {string} filename 
 	 */
 	async delete(filename) {
-		await simulateLatency();
-		this.files.delete(filename);
+		return fs.promises.unlink(this.#fullNameFor(filename));
 	}
 
 	/**
@@ -66,12 +69,9 @@ export class FileService {
 	 * 	prefix?: string
 	 * }} [options]
 	 */
-	async * list({ prefix } = {}) {
-		await simulateLatency();
-		let count = 0;
-		for (const name of this.files.keys()) {
-			count++;
-			if (count % 1000 == 0) await simulateLatency();
+	async * list({ prefix = '' } = {}) {
+		const all = await fs.promises.readdir(CWD, { recursive: true });
+		for (const name of all) {
 			if (prefix === undefined || name.startsWith(prefix)) yield name;
 		}
 	}

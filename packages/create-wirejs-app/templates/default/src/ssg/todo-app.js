@@ -55,7 +55,7 @@ async function App() {
 	});
 
 	const self = html`<div id='app'>
-		<div style='float: right;'>${node('auth', () => accountMenuNode)}</div>
+		<div style='float: right;'>${accountMenuNode}</div>
 		${node('content', html`<div>Loading ...</div>`)}
 	</div>`;
 

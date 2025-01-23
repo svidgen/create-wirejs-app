@@ -16,10 +16,9 @@ export async function generate() {
 				<h1>Welcome!</h1>
 				<p>This is your wirejs app!</p>
 				<p>It comes with some sample API methods and pages.</p>
-				<p>
 				<ul>
 					<li><a href='/todo-app.html'>Todo App</a></li>
-					<li><a href='/simple-wiki/index.html'>SSR page</a></li>
+					<li><a href='/simple-wiki/index.html'>Simple Wiki</a></li>
 				</ul>
 			</body>
 		</html>

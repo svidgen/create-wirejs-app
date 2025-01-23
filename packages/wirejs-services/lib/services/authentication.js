@@ -1,17 +1,18 @@
+import process from 'process';
+import fs from 'fs';
+import path from 'path';
+
 import * as jose from 'jose';
+import bcrypt from 'bcrypt';
+
 import { Secret } from '../resources/secret.js';
 import { CookieJar } from '../adapters/cookie-jar.js';
 import { withContext } from '../adapters/context.js';
 
-function simulateBaseLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 10));
-}
+const CWD = process.cwd();
+const SALT_ROUNDS = 10;
 
-function simulateAuthenticateLatency() {
-	return new Promise(unsleep => setTimeout(unsleep, 50));
-}
-
-const signingSecret = new Secret('auth-signing-secret');
+const signingSecret = new Secret('wirejs-services/auth-jwt-signing-secret');
 
 /**
  * @typedef {{
@@ -90,10 +91,7 @@ export class AuthenticationService {
 	#cookieName;
 	#signingSecret;
 
-	/**
-	 * @type {Map<string, User>}
-	 */
-	#users = new Map();
+	#users;
 
 	/**
 	 * 
@@ -105,9 +103,64 @@ export class AuthenticationService {
 		this.#duration = duration || ONE_WEEK;
 		this.#keepalive = !!keepalive;
 		this.#cookieName = cookie ?? 'identity';
+
+		this.#users = {
+			id,
+			
+			/**
+			 * 
+			 * @param {string} username
+			 */
+			async get(username) {
+				try {
+					const data = await fs.promises.readFile(this.filenameFor(username));
+					return JSON.parse(data);
+				} catch {
+					return undefined;
+				}
+			},
+
+			/**
+			 * @param {string} username
+			 * @param {User} user
+			 */
+			async set(username, details) {
+				await fs.promises.mkdir(
+					path.dirname(this.filenameFor(username)),
+					{ recursive: true }
+				);
+				await fs.promises.writeFile(
+					this.filenameFor(username),
+					JSON.stringify(details)
+				);
+			},
+
+			/**
+			 * @param {string} username
+			 */
+			async has(username) {
+				const user = await this.get(username);
+				return !!user;
+			},
+
+			/**
+			 * @param {string} username
+			 * @returns 
+			 */
+			filenameFor(username) {
+				const sanitizedId = this.id.replace('~', '-').replace(/\.+/g, '.');
+				const sanitizedName = username.replace('~', '-').replace(/\.+/g, '.');
+				return path.join(CWD,
+					'temp',
+					'wirejs-services',
+					'authentication',
+					sanitizedId,
+					`${sanitizedName}.json`
+				);
+			}
+		}
+				
 		if (services.has(id)) {
-			this.#users = services.get(id).#users;
-		} else {
 			services.set(id, this);
 		}
 	}
@@ -145,8 +198,6 @@ export class AuthenticationService {
 			console.error(err);
 		}
 
-		console.log({idCookie, idPayload, user});
-
 		if (user) {
 			return {
 				state: 'authenticated',
@@ -165,7 +216,6 @@ export class AuthenticationService {
 	 * @returns {Promise<AuthenticationState>}
 	 */
 	async getState(cookies) {
-		await simulateBaseLatency();
 		const state = await this.getBaseState(cookies);
 		if (state.state === 'authenticated') {
 			if (this.#keepalive) this.setBaseState(state);
@@ -281,15 +331,13 @@ export class AuthenticationService {
 	 */
 	async setState(cookies, { key, inputs, verb: _verb }) {
 		if (key === 'signout') {
-			await simulateBaseLatency();
 			await this.setBaseState(cookies, undefined);
 			return this.getState(cookies);
 		} else if (key === 'signup') {
-			await simulateAuthenticateLatency();
 			const errors = this.missingFieldErrors(inputs, ['username', 'password']);
 			if (errors) {
 				return { errors };
-			} else if (this.#users.has(inputs.username)) {
+			} else if (await this.#users.has(inputs.username)) {
 				return { errors: 
 						[{
 						field: 'username',
@@ -297,16 +345,15 @@ export class AuthenticationService {
 					}]
 				};
 			} else {
-				this.#users.set(inputs.username, {
+				await this.#users.set(inputs.username, {
 					id: inputs.username,
-					password: inputs.password
+					password: await bcrypt.hash(inputs.password, SALT_ROUNDS)
 				});
 				await this.setBaseState(cookies, inputs.username);
 				return this.getState(cookies);
 			}
 		} else if (key === 'signin') {
-			await simulateAuthenticateLatency();
-			const user = this.#users.get(inputs.username);
+			const user = await this.#users.get(inputs.username);
 			if (!user) {
 				return { errors:
 					[{
@@ -314,10 +361,10 @@ export class AuthenticationService {
 						message: `User doesn't exist.`
 					}]
 				};
-			} else if (user.password === inputs.password) {
+			} else if (await bcrypt.compare(inputs.password, user.password)) {
 				// a real authentication service will use password hashing.
 				// this is an in-memory just-for-testing user pool.
-				this.setBaseState(cookies, inputs.username);
+				await this.setBaseState(cookies, inputs.username);
 				return this.getState(cookies);
 			} else {
 				return { errors:
@@ -328,9 +375,8 @@ export class AuthenticationService {
 				};
 			}
 		} else if (key === 'changepassword') {
-			await simulateAuthenticateLatency();
 			const state = await this.getBaseState(cookies);
-			const user = this.#users.get(state.user);
+			const user = await this.#users.get(state.user);
 			if (!user) {
 				return { errors:
 					[{
@@ -338,10 +384,10 @@ export class AuthenticationService {
 						message: `You're not signed in as a recognized user.`
 					}]
 				};
-			} else if (user.password === inputs.existingPassword) {
-				this.#users.set(user.id, {
+			} else if (await bcrypt.compare(inputs.existingPassword, user.password)) {
+				await this.#users.set(user.id, {
 					...user,
-					password: inputs.newPassword
+					password: await bcrypt.hash(inputs.newPassword, SALT_ROUNDS)
 				});
 				return {
 					message: "Password updated.",
@@ -355,7 +401,6 @@ export class AuthenticationService {
 				};
 			}
 		} else {
-			await simulateBaseLatency();
 			return { errors: 
 				[{
 					message: 'Unrecognized authentication action.'

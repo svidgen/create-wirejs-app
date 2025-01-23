@@ -56,7 +56,7 @@ async function Wiki({ context }) {
 	}
 
 	const self = html`<div id='wiki'>
-		<div style='float: right;'>${node('account', accountMenuNode)}</div>
+		<div style='float: right;'>${accountMenuNode}</div>
 		${node('content', markdown, md => 
 			html`<div>${DOMPurify.sanitize(marked.parse(md))}</div>`)
 		}
