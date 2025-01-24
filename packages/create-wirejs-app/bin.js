@@ -18,6 +18,10 @@ const [
 	await copy(`${__dirname}/templates/default`, `./${projectName}`);
 	await copy(`${__dirname}/templates/default/gitignore`, `./${projectName}/.gitignore`);
 	await fs.promises.unlink(`./${projectName}/gitignore`);
+	await fs.promises.rename(
+		`./${projectName}/src/ssr/simple-wiki/STAR.js`,
+		`./${projectName}/src/ssr/simple-wiki/*.js`
+	)
 
 	const packageJson = await fs.readFileSync(`./${projectName}/package.json`);
 	fs.writeFileSync(

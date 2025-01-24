@@ -8,7 +8,7 @@
 	"scripts": {
 		"clean": "rimraf sample-app",
 		"build": "npm run clean && create-wirejs-app sample-app && npm run overwrite-locals",
-		"overwrite-locals": "cd sample-app && npm install ../../wirejs-scripts ../../wirejs-services ../../../node_modules/wirejs-dom",
+		"overwrite-locals": "cd sample-app && npm install ../../wirejs-scripts ../../wirejs-resources ../../../node_modules/wirejs-dom",
 		"start": "cd sample-app && npm run start"
 	},
 	"dependencies": {
