@@ -1,48 +1,50 @@
-import process from 'process';
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
+import { Resource } from '../resource.js';
+import { FileService } from '../services/file.js';
 
-const CWD = process.cwd();
+const FILENAME = 'secret';
 
-/**
- * @type {Map<string, Secret>}
- */
-const secrets = new Map();
-
-export class Secret {
-	#id;
+export class Secret extends Resource {
+	/**
+	 * @type {FileService}
+	 */
+	#fileService;
 
 	/**
-	 * @param {string} id 
-	 * @param {string} [value]
+	 * @type {Promise<any>}
 	 */
-	constructor(id, value) {
-		this.#id = id;
-		secrets.set(id, this);
-		if (!fs.existsSync(this.#filename())) {
-			fs.mkdirSync(path.dirname(this.#filename()), { recursive: true });
-			fs.writeFileSync(
-				this.#filename(),
-				value ?? crypto.randomBytes(64).toString('base64url')
-			);
-		}
+	#initPromise;
+
+	/**
+	 * @param {Resource | string}
+	 * @param {string} id 
+	 */
+	constructor(scope, id) {
+		super(scope, id);
+		this.#fileService = new FileService(this, 'files');
+		
+		this.#initPromise = this.#fileService.write(
+			FILENAME,
+			JSON.stringify(crypto.randomBytes(64).toString('base64url')),
+			{ onlyIfNotExists: true }
+		).catch(error => {
+			if (!this.#fileService.isAlreadyExistsError(error)) throw error;
+		});
 	}
 
-	#filename() {
-		const sanitizedId = this.id.replace('~', '-').replace(/\.+/g, '.');
-		return path.join(CWD, 'temp', 'wirejs-services', 'secrets', sanitizedId);
-	}
-
-	get id() {
-		return this.#id;
-	}
-
+	/**
+	 * @returns {any}
+	 */
 	async read() {
-		return fs.promises.readFile(this.#filename(), 'utf8');
+		await this.#initPromise;
+		return JSON.parse(await this.#fileService.read(FILENAME));
 	}
 
-	async write(value) {
-		fs.promises.writeFile(this.#filename(), value);
+	/**
+	 * @param {any} data 
+	 */
+	async write(data) {
+		await this.#initPromise;
+		await this.#fileService.write(FILENAME, JSON.stringify(data));
 	}
 }

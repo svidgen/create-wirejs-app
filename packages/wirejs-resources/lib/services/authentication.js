@@ -1,18 +1,40 @@
-import process from 'process';
-import fs from 'fs';
-import path from 'path';
+import { scrypt, randomBytes } from 'crypto';
 
 import * as jose from 'jose';
-import bcrypt from 'bcrypt';
 
+import { Resource } from '../resource.js';
 import { Secret } from '../resources/secret.js';
+import { FileService } from './file.js';
 import { CookieJar } from '../adapters/cookie-jar.js';
 import { withContext } from '../adapters/context.js';
 
-const CWD = process.cwd();
-const SALT_ROUNDS = 10;
 
-const signingSecret = new Secret('wirejs-services/auth-jwt-signing-secret');
+/**
+ * @param {string} password 
+ * @param {string} [salt]
+ */
+function hash(password, salt) {
+	return new Promise((resolve, reject) => {
+		const finalSalt = salt || randomBytes(16).toString('hex');
+		scrypt(password, finalSalt, 64, (err, key) => {
+			if (err) {
+				reject(err);
+			} else {
+				resolve(`${finalSalt}$${key.toString('hex')}`);
+			}
+		})
+	});
+}
+
+/**
+ * @param {string} password 
+ * @param {string} passwordHash 
+ */
+async function verifyHash(password, passwordHash) {
+	const [saltPart, _hashPart] = passwordHash.split('$');
+	const rehashed = await hash(password, saltPart);
+	return rehashed === passwordHash;
+}
 
 /**
  * @typedef {{
@@ -77,32 +99,40 @@ const signingSecret = new Secret('wirejs-services/auth-jwt-signing-secret');
  * @property {string} [cookie] - The name of the cookie to use to store the authentication state JWT.
  */
 
-/**
- * @type {Map<string, AuthService>}
- */
-const services = new Map();
-
 const ONE_WEEK = 7 * 24 * 60 * 60; // days * hours/day * minutes/hour * seconds/minute
 
-export class AuthenticationService {
-	id;
+export class AuthenticationService extends Resource {
 	#duration;
 	#keepalive;
 	#cookieName;
+
+	/**
+	 * @type {Secret}
+	 */
+	#rawSigningSecret;
+
+	/**
+	 * @type {Promise<Uint8Array<ArrayBufferLike>> | undefined}
+	 */
 	#signingSecret;
 
 	#users;
 
 	/**
 	 * 
+	 * @param {Resource | string} scope
 	 * @param {string} id 
 	 * @param {AuthenticationServiceOptions} [options]
 	 */
-	constructor(id, { duration, keepalive, cookie } = {}) {
-		this.id = id;
+	constructor(scope, id, { duration, keepalive, cookie } = {}) {
+		super(scope, id);
+
 		this.#duration = duration || ONE_WEEK;
 		this.#keepalive = !!keepalive;
 		this.#cookieName = cookie ?? 'identity';
+
+		this.#rawSigningSecret = new Secret(this, 'jwt-signing-secret');
+		const fileService = new FileService(this, 'files');
 
 		this.#users = {
 			id,
@@ -113,7 +143,7 @@ export class AuthenticationService {
 			 */
 			async get(username) {
 				try {
-					const data = await fs.promises.readFile(this.filenameFor(username));
+					const data = await fileService.read(this.filenameFor(username));
 					return JSON.parse(data);
 				} catch {
 					return undefined;
@@ -125,14 +155,7 @@ export class AuthenticationService {
 			 * @param {User} user
 			 */
 			async set(username, details) {
-				await fs.promises.mkdir(
-					path.dirname(this.filenameFor(username)),
-					{ recursive: true }
-				);
-				await fs.promises.writeFile(
-					this.filenameFor(username),
-					JSON.stringify(details)
-				);
+				await fileService.write(this.filenameFor(username), JSON.stringify(details));
 			},
 
 			/**
@@ -144,29 +167,17 @@ export class AuthenticationService {
 			},
 
 			/**
-			 * @param {string} username
+			 * @param {string} username 
 			 * @returns 
 			 */
 			filenameFor(username) {
-				const sanitizedId = this.id.replace('~', '-').replace(/\.+/g, '.');
-				const sanitizedName = username.replace('~', '-').replace(/\.+/g, '.');
-				return path.join(CWD,
-					'temp',
-					'wirejs-services',
-					'authentication',
-					sanitizedId,
-					`${sanitizedName}.json`
-				);
+				return `${username}.json`;
 			}
-		}
-				
-		if (services.has(id)) {
-			services.set(id, this);
 		}
 	}
 
 	async getSigningSecret() {
-		const secretAsString = await signingSecret.read();
+		const secretAsString = await this.#rawSigningSecret.read();
 		return new TextEncoder().encode(secretAsString);
 	}
 
@@ -347,7 +358,7 @@ export class AuthenticationService {
 			} else {
 				await this.#users.set(inputs.username, {
 					id: inputs.username,
-					password: await bcrypt.hash(inputs.password, SALT_ROUNDS)
+					password: await hash(inputs.password)
 				});
 				await this.setBaseState(cookies, inputs.username);
 				return this.getState(cookies);
@@ -361,7 +372,7 @@ export class AuthenticationService {
 						message: `User doesn't exist.`
 					}]
 				};
-			} else if (await bcrypt.compare(inputs.password, user.password)) {
+			} else if (await verifyHash(inputs.password, user.password)) {
 				// a real authentication service will use password hashing.
 				// this is an in-memory just-for-testing user pool.
 				await this.setBaseState(cookies, inputs.username);
@@ -384,10 +395,10 @@ export class AuthenticationService {
 						message: `You're not signed in as a recognized user.`
 					}]
 				};
-			} else if (await bcrypt.compare(inputs.existingPassword, user.password)) {
+			} else if (await verifyHash(inputs.existingPassword, user.password)) {
 				await this.#users.set(user.id, {
 					...user,
-					password: await bcrypt.hash(inputs.newPassword, SALT_ROUNDS)
+					password: await hash(inputs.newPassword)
 				});
 				return {
 					message: "Password updated.",

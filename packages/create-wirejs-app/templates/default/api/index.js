@@ -1,9 +1,9 @@
 import { AuthenticationService, FileService, withContext } from 'wirejs-resources';
 import { defaultGreeting } from '../src/lib/sample-lib.js';
 
-const userTodos = new FileService('userTodoApp');
-const wikiPages = new FileService('wikiPages');
-const authService = new AuthenticationService('core-users');
+const userTodos = new FileService('app', 'userTodoApp');
+const wikiPages = new FileService('app', 'wikiPages');
+const authService = new AuthenticationService('app', 'core-users');
 
 export const auth = authService.buildApi();
 

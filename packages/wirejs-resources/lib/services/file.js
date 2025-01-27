@@ -2,27 +2,19 @@ import process from 'process';
 import fs from 'fs';
 import path from 'path';
 
+import { Resource } from '../resource.js';
+
 const CWD = process.cwd();
 
-/**
- * @type {Map<string, FileService>}
- */
-const services = new Map();
+const ALREADY_EXISTS_CODE = 'EEXIST';
 
-export class FileService {
-	id;
-
+export class FileService extends Resource {
 	/**
-	 * 
-	 * @param {{
-	 * 	id: string
-	 * }} options
+	 * @param {Resource | string} scope
+	 * @param {string} id
 	 */
-	constructor(id) {
-		this.id = id;
-		if (!services.has(id)) {
-			services.set(id, this);
-		}
+	constructor(scope, id) {
+		super(scope, id);
 	}
 
 	/**
@@ -30,9 +22,9 @@ export class FileService {
 	 * @returns 
 	 */
 	#fullNameFor(filename) {
-		const sanitizedId = this.id.replace('~', '-').replace(/\.+/g, '.');
+		const sanitizedId = this.absoluteId.replace('~', '-').replace(/\.+/g, '.');
 		const sanitizedName = filename.replace('~', '-').replace(/\.+/g, '.');
-		return path.join(CWD, 'temp', 'wirejs-services', 'files', sanitizedId, sanitizedName);
+		return path.join(CWD, 'temp', 'wirejs-services', sanitizedId, sanitizedName);
 	}
 
 	/**
@@ -47,12 +39,16 @@ export class FileService {
 	/**
 	 * 
 	 * @param {string} filename 
-	 * @param {string} data 
+	 * @param {string} data
+	 * @param {{
+	 * 	onlyIfNotExists?: boolean;
+	 * }} [options]
 	 */
-	async write(filename, data) {
+	async write(filename, data, { onlyIfNotExists = false } = {}) {
 		const fullname = this.#fullNameFor(filename);
+		const flag = onlyIfNotExists ? 'wx' : 'w';
 		await fs.promises.mkdir(path.dirname(fullname), { recursive: true });
-		return fs.promises.writeFile(fullname, data);
+		return fs.promises.writeFile(fullname, data, { flag });
 	}
 
 	/**
@@ -74,5 +70,9 @@ export class FileService {
 		for (const name of all) {
 			if (prefix === undefined || name.startsWith(prefix)) yield name;
 		}
+	}
+
+	isAlreadyExistsError(error) {
+		return error.code === ALREADY_EXISTS_CODE;
 	}
 }

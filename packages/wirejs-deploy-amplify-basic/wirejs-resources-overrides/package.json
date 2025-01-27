@@ -1,0 +1,12 @@
+{
+	"name": "wirejs-resources-overrides",
+	"version": "0.0.1",
+	"description": "Basic services and server-side resources for wirejs apps",
+	"type": "module",
+	"main": "./index.js",
+	"exports": {
+		".": {
+			"default": "./index.js"
+		}
+	}
+}

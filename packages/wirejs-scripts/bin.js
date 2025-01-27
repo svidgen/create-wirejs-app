@@ -89,6 +89,7 @@ async function callApiMethod(api, call, context) {
 			}, context);
 		}
 	} catch (error) {
+		console.log(error);
 		return { error: error.message };
 	}
 }
@@ -278,7 +279,6 @@ async function trySSRPath(req, res) {
 		global.self = global.window;
 		await import(`${srcPath}?cache-id=${new Date().getTime()}`);
 		const module = self.exports;
-		console.log({module});
 		if (typeof module.generate === 'function') {
 			const doc = await module.generate(context);
 			const doctype = doc.parentNode.doctype?.name || '';
@@ -368,11 +368,16 @@ async function compile(watch = false) {
 				...webpackConfig,
 				mode: 'development',
 				watch: true
-			}, () => {}).run(() => {});
+			}, () => {
+				console.log();
+				console.log('Compiled: http://localhost:3000/');
+			}).run(() => {});
 
 			logger.log('Starting server...');
 			const server = http.createServer(handleRequest);
-			server.listen(3000);
+			server.listen(3000).on('listening', () => {
+				console.log('Started listening on http://localhost:3000/')
+			});
 		} else {
 			logger.log('instantiating webpack compiler');
 			compiler = webpack(webpackConfig);
