@@ -1,6 +1,6 @@
 {
 	"name": "create-wirejs-deploy-amplify-basic",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Initializes very basic Amplify deployment configuration.",
 	"author": "Jon Wire",
 	"license": "MIT",
