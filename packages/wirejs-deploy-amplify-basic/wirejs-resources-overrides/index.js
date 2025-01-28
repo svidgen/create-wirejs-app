@@ -1,4 +1,4 @@
-import { registry } from 'wirejs-resources';
+import { overrides } from 'wirejs-resources';
 import { Resource } from 'wirejs-resources';
 
 export {
@@ -8,7 +8,7 @@ export {
 	Context,
 	CookieJar,
 	Resource,
-	registry,
+	overrides,
 } from 'wirejs-resources';
 
 export class FileService extends Resource {
@@ -23,7 +23,7 @@ export class FileService extends Resource {
 }
 
 // expose resources to other resources that might depend on it.
-registry.FileService = FileService;
+overrides.FileService = FileService;
 
 // export class AuthenticationService {
 // 	constructor(id) {

@@ -4,8 +4,12 @@ let API_URL = '/api';
 const indexModule = await import('./index.js');
 
 try {
-	const backendConfig = await import('./config.js');
-	if (backendConfig.apiUrl) API_URL = backendConfig.apiUrl;
+	const backendConfigModule = await import('./config.js');
+	const backendConfig = backendConfigModule.default;
+	console.log("backend config found", backendConfig);
+	if (backendConfig.apiUrl) {
+		API_URL = backendConfig.apiUrl;
+	}
 } catch {
 	console.log("No backend API config found.");
 }
