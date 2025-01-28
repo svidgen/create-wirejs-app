@@ -1,6 +1,14 @@
 import { writeFileSync } from 'fs';
 
+let API_URL = '/api';
 const indexModule = await import('./index.js');
+
+try {
+	const backendConfig = await import('./config.js');
+	if (backendConfig.apiUrl) API_URL = backendConfig.apiUrl;
+} catch {
+	console.log("No backend API config found.");
+}
 
 function dedent(tabs, text) {
 	const tabString = new Array(tabs).fill('\t').join('');
@@ -24,7 +32,7 @@ const baseClient = dedent(1, /* js */ `
 				: {};
 		}
 
-		const response = await fetch("/api", {
+		const response = await fetch("${API_URL}", {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',

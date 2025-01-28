@@ -1,0 +1,22 @@
+{
+	"name": "create-wirejs-deploy-amplify-basic",
+	"version": "1.0.0",
+	"description": "Initializes very basic Amplify deployment configuration.",
+	"author": "Jon Wire",
+	"license": "MIT",
+	"bin": {
+		"create-wirejs-deploy-amplify-basic": "./bin.js"
+	},
+	"dependencies": {
+		"recursive-copy": "^2.0.14"
+	},
+	"scripts": {
+		"build": "echo \"Nothing to build\"",
+		"clean": "echo \"Nothing to clean\""
+	},
+	"files": [
+		"bin.js",
+		"package.json",
+		"assets/*"
+	]
+}
