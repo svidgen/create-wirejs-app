@@ -1,6 +1,6 @@
 {
 	"name": "wirejs-resources",
-	"version": "0.1.1-alpha",
+	"version": "0.1.4-alpha",
 	"description": "Basic services and server-side resources for wirejs apps",
 	"type": "module",
 	"main": "./lib/index.js",

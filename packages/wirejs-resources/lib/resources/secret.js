@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { Resource } from '../resource.js';
 import { FileService } from '../services/file.js';
+import { overrides } from '../overrides.js';
 
 const FILENAME = 'secret';
 
@@ -21,7 +22,7 @@ export class Secret extends Resource {
 	 */
 	constructor(scope, id) {
 		super(scope, id);
-		this.#fileService = new FileService(this, 'files');
+		this.#fileService = new (overrides.FileService || FileService)(this, 'files');
 		
 		this.#initPromise = this.#fileService.write(
 			FILENAME,

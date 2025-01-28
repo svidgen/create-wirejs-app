@@ -3,10 +3,10 @@ import { scrypt, randomBytes } from 'crypto';
 import * as jose from 'jose';
 
 import { Resource } from '../resource.js';
-import { Secret } from '../resources/secret.js';
 import { FileService } from './file.js';
-import { CookieJar } from '../adapters/cookie-jar.js';
+import { Secret } from '../resources/secret.js';
 import { withContext } from '../adapters/context.js';
+import { overrides } from '../overrides.js';
 
 
 /**
@@ -35,6 +35,8 @@ async function verifyHash(password, passwordHash) {
 	const rehashed = await hash(password, saltPart);
 	return rehashed === passwordHash;
 }
+
+// #region types
 
 /**
  * @typedef {{
@@ -99,6 +101,8 @@ async function verifyHash(password, passwordHash) {
  * @property {string} [cookie] - The name of the cookie to use to store the authentication state JWT.
  */
 
+// #endregion
+
 const ONE_WEEK = 7 * 24 * 60 * 60; // days * hours/day * minutes/hour * seconds/minute
 
 export class AuthenticationService extends Resource {
@@ -131,8 +135,8 @@ export class AuthenticationService extends Resource {
 		this.#keepalive = !!keepalive;
 		this.#cookieName = cookie ?? 'identity';
 
-		this.#rawSigningSecret = new Secret(this, 'jwt-signing-secret');
-		const fileService = new FileService(this, 'files');
+		this.#rawSigningSecret = new (overrides.Secret || Secret)(this, 'jwt-signing-secret');
+		const fileService = new (overrides.FileService || FileService)(this, 'files');
 
 		this.#users = {
 			id,

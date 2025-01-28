@@ -2,6 +2,8 @@
 	"name": "wirejs-infra",
 	"workspaces": [
 		"packages/create-wirejs-app",
+		"packages/create-wirejs-deploy-amplify-basic",
+		"packages/wirejs-deploy-amplify-basic",
 		"packages/wirejs-scripts",
 		"packages/wirejs-resources",
 		"packages/test-default"

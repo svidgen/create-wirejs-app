@@ -28,6 +28,7 @@ const [_nodeBinPath, _scriptPath, action] = process.argv;
  * to deploy frontend (hosting) and backend (services).
  */
 async function createSkeleton() {
+	console.log("creating skeleton deployment directories")
 	await rimraf(HOSTING_DIR);
 	await fs.promises.mkdir(HOSTING_DIR, { recursive: true });
 	await fs.promises.mkdir(STATIC_DIR, { recursive: true });
@@ -38,12 +39,14 @@ async function createSkeleton() {
 	
 	// skeleton for hosting assets
 	await copy(path.join(SELF_DIR, 'amplify-hosting-assets'), path.join(HOSTING_DIR));
+	console.log("done creating deployment directories")
 }
 
 /**
  * Install all deps, adding those needed for Amplify backend deployments.
  */
 async function installDeps() {
+	console.log("adding deps to package.json");
 	// add deps used by Amplify to deploy backend
 	const packageData = JSON.parse(await fs.promises.readFile(path.join(CWD, 'package.json')));
 	packageData.devDependencies = {
@@ -65,8 +68,12 @@ async function installDeps() {
 		JSON.stringify(packageData, null, 2)
 	);
 
+	console.log("installing all deps")
+
 	// install all
-	execSync('npm ci --cache .npm --prefer-offline');
+	execSync('npm i');
+
+	console.log("done installing deps")
 }
 
 /**
@@ -74,6 +81,7 @@ async function installDeps() {
  * @returns {Promise<string>} output filename
  */
 async function buildApiBundle() {
+	console.log("building api")
 	// looks like cruft at the moment, but we'll see ...
 	// await import(path.join(PROJECT_API_DIR, 'index.js'));
 
@@ -83,6 +91,7 @@ async function buildApiBundle() {
 	// on the original `wirejs-resources` into the intermediate bundle. doing this
 	// allows us to completely override (alias) `wirejs-resources` in the final build
 	// without creating a circular alias.
+	console.log("creating intermediate wirejs-resources overrides");
 	await esbuild.build({
 		entryPoints: [path.join(SELF_DIR, 'wirejs-resources-overrides', 'index.js')],
 		bundle: true,
@@ -93,6 +102,7 @@ async function buildApiBundle() {
 
 	// exploratory build. builds using our overrides, which will emit a manifest of
 	// resources required by the API when imported.
+	console.log("creating api bundle using platform overrides");
 	await esbuild.build({
 		entryPoints: [path.join('.', 'api', 'index.js')],
 		bundle: true,
@@ -108,12 +118,13 @@ async function buildApiBundle() {
 	// to direct construction of backend resources. for now, this is just informational/
 	// confirmational that we're building things properly.
 	await import(outputPath);
-	console.log(globalThis.wirejsResources);
+	console.log('discovered resources', globalThis.wirejsResources);
 
 	return outputPath;
 }
 
 async function deployFrontend() {
+	console.log("copying frontend assets");
 	await copy(PROJECT_DIST_DIR, STATIC_DIR);
 
 	// ssr will likely have been build as a static asset, but should NOT be
@@ -125,14 +136,18 @@ async function deployFrontend() {
 		path.join(PROJECT_DIST_DIR, 'ssr'),
 		path.join(HOSTING_DIR, 'compute', 'default', 'ssr')
 	);
+	console.log('frontend assets copied');
 }
 
 
 if (action === 'prebuild') {
+	console.log("starting prebuild");
 	await createSkeleton();
 	await installDeps();
 	await buildApiBundle();
+	console.log("prebuild done");
 } else if (action === 'inject-backend') {
+	console.log("starting inject-backend");
 	const config = JSON.parse(await fs.promises.readFile(path.join('.', 'amplify_outputs.json')));
 	const apiUrl = config.custom.api;
 
@@ -142,10 +157,13 @@ if (action === 'prebuild') {
 
 	await fs.promises.writeFile(
 		path.join(PROJECT_API_DIR, 'config.js'),
-		`const config = ${configJSON};\n export default config;`
+		`const config = ${configJSON};\nexport default config;`
 	);
+	console.log("inject-backend done");
 } else if (action === 'build-hosting-artifacts') {
+	console.log("starting build-hosting-artifacts");
 	await deployFrontend();
+	console.log("build-hosting-artifacts done");
 } else {
 	throw new Error("Unrecognized action.");
 }
