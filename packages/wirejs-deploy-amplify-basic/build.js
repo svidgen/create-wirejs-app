@@ -9,7 +9,8 @@ import esbuild from 'esbuild';
 import { execSync } from 'child_process';
 
 const CWD = process.cwd();
-const SELF_DIR = import.meta.dirname;
+const __filename = import.meta.url.replace(/^file:/, '');
+const SELF_DIR = path.dirname(__filename);
 const TEMP_DIR = path.join(SELF_DIR, 'temp');
 const RESOURCE_OVERRIDES_BUILD = path.join(
 	TEMP_DIR, 'wirejs-resource-overrides.build.js'

@@ -1,9 +1,9 @@
 {
-	"name": "wirejs-amplify-build",
-	"version": "0.0.1-alpha",
+	"name": "wirejs-deploy-amplify-basic",
+	"version": "0.0.6-alpha",
 	"type": "module",
 	"bin": {
-		"wirejs-amplify-build": "./build.js"
+		"wirejs-deploy-amplify-basic": "./build.js"
 	},
 	"dependencies": {
 		"copy": "^0.3.2",
