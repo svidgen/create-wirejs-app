@@ -6,21 +6,10 @@ import { overrides } from '../overrides.js';
 const FILENAME = 'secret';
 
 export class Secret extends Resource {
-	/**
-	 * @type {FileService}
-	 */
-	#fileService;
+	#fileService: FileService;
+	#initPromise: Promise<any> | undefined;
 
-	/**
-	 * @type {Promise<any>}
-	 */
-	#initPromise;
-
-	/**
-	 * @param {Resource | string}
-	 * @param {string} id 
-	 */
-	constructor(scope, id) {
+	constructor(scope: Resource | string, id: string) {
 		super(scope, id);
 		this.#fileService = new (overrides.FileService || FileService)(this, 'files');
 	}
@@ -36,18 +25,12 @@ export class Secret extends Resource {
 		return this.#initPromise;
 	}
 
-	/**
-	 * @returns {any}
-	 */
 	async read() {
 		await this.#initialize();
 		return JSON.parse(await this.#fileService.read(FILENAME));
 	}
 
-	/**
-	 * @param {any} data 
-	 */
-	async write(data) {
+	async write(data: any) {
 		await this.#initialize();
 		await this.#fileService.write(FILENAME, JSON.stringify(data));
 	}

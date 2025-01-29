@@ -1,32 +1,24 @@
-/**
- * @typedef {Object} Cookie
- * @property {string} name
- * @property {string} value
- * @property {number} [maxAge] - The maximum age (TTL) in seconds
- * @property {boolean} [httpOnly] - Whether the cookie is only accessible to the client (not JS)
- * @property {boolean} [secure] - Whether the cookie should only be sent over HTTPS (or localhost)
- */
+export type Cookie = {
+	name: string;
+	value: string;
+	httpOnly?: boolean;
+	secure?: boolean;
+	maxAge?: number;
+}
 
 export class CookieJar {
-	/**
-	 * @type {Record<string, Cookie>}
-	 */
-	#cookies = {};
+	#cookies: Record<string, Cookie> = {};
 
 	/**
 	 * The list of cookies that have been set with `set()` which need to be
 	 * sent to the client.
-	 * 
-	 * @type {Set<string>}
 	 */
-	#setCookies = new Set();
+	#setCookies = new Set<string>();
 
 	/**
 	 * Initialize
-	 * 
-	 * @param {string | undefined} cookie
 	 */
-	constructor(cookie) {
+	constructor(cookie?: string) {
 		this.#cookies = Object.fromEntries(
 			(cookie || '')
 				.split(/;/g)
@@ -40,28 +32,16 @@ export class CookieJar {
 		);
 	}
 
-	/**
-	 * @param {Cookie} cookie 
-	 */
-	set(cookie) {
+	set(cookie: Cookie) {
 		this.#cookies[cookie.name] = {...cookie};
 		this.#setCookies.add(cookie.name);
 	}
 	
-	/**
-	 * 
-	 * @param {string} name 
-	 * @returns {Cookie | undefined}
-	 */
-	get(name) {
+	get(name: string) {
 		return this.#cookies[name] ? { ...this.#cookies[name] } : undefined;
 	}
 
-	/**
-	 * 
-	 * @param {string} name 
-	 */
-	delete(name) {
+	delete(name: string) {
 		if (this.#cookies[name]) {
 			this.#cookies[name].value = '-- deleted --';
 			this.#cookies[name].maxAge = 0;
@@ -73,11 +53,9 @@ export class CookieJar {
 	 * Gets a copy of all cookies.
 	 * 
 	 * Changes made to this copy are not reflected
-	 * 
-	 * @returns {Record<string, string>}
 	 */
 	getAll() {
-		const all = {};
+		const all: Record<string, string> = {};
 		for (const cookie of Object.values(this.#cookies)) {
 			all[cookie.name] = cookie.value;
 		}
@@ -85,7 +63,7 @@ export class CookieJar {
 	}
 
 	getSetCookies() {
-		const all = [];
+		const all: Cookie[] = [];
 		for (const name of this.#setCookies) {
 			all.push({...this.#cookies[name]});
 		}

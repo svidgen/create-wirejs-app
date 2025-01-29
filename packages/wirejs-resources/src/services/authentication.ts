@@ -7,13 +7,9 @@ import { FileService } from './file.js';
 import { Secret } from '../resources/secret.js';
 import { withContext } from '../adapters/context.js';
 import { overrides } from '../overrides.js';
+import type { CookieJar } from '../adapters/cookie-jar.js';
 
-
-/**
- * @param {string} password 
- * @param {string} [salt]
- */
-function hash(password, salt) {
+function hash(password: string, salt?: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const finalSalt = salt || randomBytes(16).toString('hex');
 		scrypt(password, finalSalt, 64, (err, key) => {
@@ -26,11 +22,7 @@ function hash(password, salt) {
 	});
 }
 
-/**
- * @param {string} password 
- * @param {string} passwordHash 
- */
-async function verifyHash(password, passwordHash) {
+async function verifyHash(password: string, passwordHash: string): Promise<boolean> {
 	const [saltPart, _hashPart] = passwordHash.split('$');
 	const rehashed = await hash(password, saltPart);
 	return rehashed === passwordHash;
@@ -38,97 +30,88 @@ async function verifyHash(password, passwordHash) {
 
 // #region types
 
-/**
- * @typedef {{
- * 	id: string;
- * 	password: string;
- * }} User
- */
+type User = {
+	id: string;
+	password: string;
+};
 
-/**
- * @typedef {{
- * 	label: string;
- * 	type: 'string' | 'password' | 'number' | 'boolean';
- * 	isRequired?: boolean;
- * }} AuthenticationInput
- */
+type AuthenticationInput = {
+	label: string;
+	type: 'text' | 'password';
+	isRequired?: boolean;
+};
 
-/**
- * @typedef {{
- * 	name: string;
- * 	title?: string;
- * 	description?: string;
- * 	message?: string;
- * 	inputs?: Record<string, AuthenticationInput>;
- * 	buttons?: string[];
- * }} Action
- */
+type Action = {
+	name: string;
+	title?: string;
+	description?: string;
+	message?: string;
+	inputs?: Record<string, AuthenticationInput>;
+	buttons?: string[];
+};
 
-/**
- * @typedef {{
- * 	state: 'authenticated' | 'unauthenticated';
- * 	user: string | undefined;
- * }} AuthenticationBaseState
- */
+type AuthenticationBaseState = {
+	state: 'authenticated' | 'unauthenticated';
+	user: string | undefined;
+};
 
-/**
- * @typedef {{
- * 	state: AuthenticationBaseState;
- * 	message?: string;
- * 	actions: Record<string, Action>;
- * }} AuthenticationState
- */
+type AuthenticationState = {
+	state: AuthenticationBaseState;
+	message?: string;
+	actions: Record<string, Action>;
+};
 
-/**
- * @typedef {{
- * 	key: string;
- * 	inputs: Record<string, string | number | boolean>;
- * 	verb: string;
- * }} PerformActionParameter
- */
+type PerformActionParameter = {
+	key: string;
+	inputs: Record<string, string | number | boolean>;
+	verb: string;
+};
 
-/**
- * @typedef {{
- * 	message: string;
- * 	field?: string;
- * }} AuthenticationError
- */
+type AuthenticationError = {
+	message: string;
+	field?: string;
+};
 
-/**
- * @typedef {Object} AuthenticationServiceOptions
- * @property {number} [duration] - The number of seconds the authentication session stays alive.
- * @property {boolean} [keepalive] - Whether to automatically extend (keep alive) an authentication session when used.
- * @property {string} [cookie] - The name of the cookie to use to store the authentication state JWT.
- */
+type AuthenticationServiceOptions = {
+	/**
+	 * The number of seconds the authentication session stays alive.
+	 */
+	duration?: number;
+
+	/**
+	 * Whether to automatically extend (keep alive) an authentication session when used.
+	 */
+	keepalive?: boolean;
+
+	/**
+	 * The name of the cookie to use to store the authentication state JWT.
+	 */
+	cookie?: string;
+}
+
+type SetOfUsers = {
+	get(username: string): Promise<User | undefined>;
+	set(username: string, user: User): Promise<void>;
+	has(username: string): Promise<boolean>;
+}
 
 // #endregion
 
 const ONE_WEEK = 7 * 24 * 60 * 60; // days * hours/day * minutes/hour * seconds/minute
 
 export class AuthenticationService extends Resource {
-	#duration;
-	#keepalive;
-	#cookieName;
+	#duration: number;;
+	#keepalive: boolean;
+	#cookieName: string;
+	#rawSigningSecret: Secret;
+	#signingSecret: Promise<Uint8Array<ArrayBufferLike>> | undefined;
+	#users: SetOfUsers;
 
-	/**
-	 * @type {Secret}
-	 */
-	#rawSigningSecret;
-
-	/**
-	 * @type {Promise<Uint8Array<ArrayBufferLike>> | undefined}
-	 */
-	#signingSecret;
-
-	#users;
-
-	/**
-	 * 
-	 * @param {Resource | string} scope
-	 * @param {string} id 
-	 * @param {AuthenticationServiceOptions} [options]
-	 */
-	constructor(scope, id, { duration, keepalive, cookie } = {}) {
+	constructor(
+		scope: Resource | string,
+		id: string,
+		{ duration, keepalive, cookie }: AuthenticationServiceOptions = {}
+	) {
 		super(scope, id);
 
 		this.#duration = duration || ONE_WEEK;
@@ -141,11 +124,7 @@ export class AuthenticationService extends Resource {
 		this.#users = {
 			id,
 			
-			/**
-			 * 
-			 * @param {string} username
-			 */
-			async get(username) {
+			async get(username: string) {
 				try {
 					const data = await fileService.read(this.filenameFor(username));
 					return JSON.parse(data);
@@ -154,57 +133,40 @@ export class AuthenticationService extends Resource {
 				}
 			},
 
-			/**
-			 * @param {string} username
-			 * @param {User} user
-			 */
-			async set(username, details) {
+			async set(username: string, details: User) {
 				await fileService.write(this.filenameFor(username), JSON.stringify(details));
 			},
 
-			/**
-			 * @param {string} username
-			 */
-			async has(username) {
+			async has(username: string) {
 				const user = await this.get(username);
 				return !!user;
 			},
 
-			/**
-			 * @param {string} username 
-			 * @returns 
-			 */
-			filenameFor(username) {
+			filenameFor(username: string) {
 				return `${username}.json`;
 			}
-		}
+		} as any;
 	}
 
-	async getSigningSecret() {
+	async getSigningSecret(): Promise<Uint8Array<ArrayBufferLike>> {
 		const secretAsString = await this.#rawSigningSecret.read();
 		return new TextEncoder().encode(secretAsString);
 	}
 
-	/**
-	 * @type {Promise<Uint8Array<ArrayBufferLike>>}
-	 */
-	get signingSecret() {
+	get signingSecret(): Promise<Uint8Array<ArrayBufferLike>> {
 		if (!this.#signingSecret) {
 			this.#signingSecret = this.getSigningSecret();
 		}
 		return this.#signingSecret;
 	}
 
-	/**
-	 * @param {CookieJar} cookies
-	 * @returns {Promise<AuthenticationBaseState>}
-	 */
-	async getBaseState(cookies) {
-		let idCookie, idPayload, user;
+	async getBaseState(cookies: CookieJar): Promise<AuthenticationBaseState> {
+		let idCookie: string | undefined;
+		let user: string | undefined;
 
 		try {
 			idCookie = cookies.get(this.#cookieName)?.value;
-			idPayload = idCookie ? (
+			const idPayload = idCookie ? (
 				await jose.jwtVerify(idCookie, await this.signingSecret)
 			) : undefined;
 			user = idPayload ? idPayload.payload.sub : undefined;
@@ -226,14 +188,10 @@ export class AuthenticationService extends Resource {
 		}
 	}
 
-	/**
-	 * @param {CookieJar} cookies
-	 * @returns {Promise<AuthenticationState>}
-	 */
-	async getState(cookies) {
+	async getState(cookies: CookieJar): Promise<AuthenticationState> {
 		const state = await this.getBaseState(cookies);
 		if (state.state === 'authenticated') {
-			if (this.#keepalive) this.setBaseState(state);
+			if (this.#keepalive) this.setBaseState(cookies, state.user);
 			return {
 				state,
 				actions: {
@@ -293,12 +251,7 @@ export class AuthenticationService extends Resource {
 		}
 	}
 
-	/**
-	 * 
-	 * @param {CookieJar} cookies 
-	 * @param {string | undefined} [user]
-	 */
-	async setBaseState(cookies, user) {
+	async setBaseState(cookies: CookieJar, user?: string) {
 		if (!user) {
 			cookies.delete(this.#cookieName);
 		} else {
@@ -319,17 +272,11 @@ export class AuthenticationService extends Resource {
 		}	
 	}
 
-	/**
-	 * 
-	 * @param {Record<string, string>} input 
-	 * @param {string[]} fields 
-	 * @returns {AuthenticationError[] | undefined}
-	 */
-	missingFieldErrors(input, fields) {
-		/**
-		 * @type {AuthenticationError[]}
-		 */
-		const errors = [];
+	missingFieldErrors(
+		input: Record<string, string | number | boolean>,
+		fields: string[]
+	): AuthenticationError[] | undefined {
+		const errors: AuthenticationError[] = [];
 		for (const field of fields) {
 			if (!input[field]) errors.push({
 				field,
@@ -339,12 +286,10 @@ export class AuthenticationService extends Resource {
 		return errors.length > 0 ? errors : undefined;
 	}
 
-	/**
-	 * @param {CookieJar} cookies
-	 * @param {PerformActionParameter} params
-	 * @returns {Promise<AuthenticationState | { errors: AuthenticationError[] }>}
-	 */
-	async setState(cookies, { key, inputs, verb: _verb }) {
+	async setState(
+		cookies: CookieJar,
+		{ key, inputs, verb: _verb }: PerformActionParameter
+	): Promise<AuthenticationState | { errors: AuthenticationError[] }> {
 		if (key === 'signout') {
 			await this.setBaseState(cookies, undefined);
 			return this.getState(cookies);
@@ -352,7 +297,7 @@ export class AuthenticationService extends Resource {
 			const errors = this.missingFieldErrors(inputs, ['username', 'password']);
 			if (errors) {
 				return { errors };
-			} else if (await this.#users.has(inputs.username)) {
+			} else if (await this.#users.has(inputs.username as string)) {
 				return { errors: 
 						[{
 						field: 'username',
@@ -360,15 +305,15 @@ export class AuthenticationService extends Resource {
 					}]
 				};
 			} else {
-				await this.#users.set(inputs.username, {
-					id: inputs.username,
-					password: await hash(inputs.password)
+				await this.#users.set(inputs.username as string, {
+					id: inputs.username as string,
+					password: await hash(inputs.password as string)
 				});
-				await this.setBaseState(cookies, inputs.username);
+				await this.setBaseState(cookies, inputs.username as string);
 				return this.getState(cookies);
 			}
 		} else if (key === 'signin') {
-			const user = await this.#users.get(inputs.username);
+			const user = await this.#users.get(inputs.username as string);
 			if (!user) {
 				return { errors:
 					[{
@@ -376,10 +321,10 @@ export class AuthenticationService extends Resource {
 						message: `User doesn't exist.`
 					}]
 				};
-			} else if (await verifyHash(inputs.password, user.password)) {
+			} else if (await verifyHash(inputs.password as string, user.password)) {
 				// a real authentication service will use password hashing.
 				// this is an in-memory just-for-testing user pool.
-				await this.setBaseState(cookies, inputs.username);
+				await this.setBaseState(cookies, inputs.username as string);
 				return this.getState(cookies);
 			} else {
 				return { errors:
@@ -391,7 +336,7 @@ export class AuthenticationService extends Resource {
 			}
 		} else if (key === 'changepassword') {
 			const state = await this.getBaseState(cookies);
-			const user = await this.#users.get(state.user);
+			const user = await this.#users.get(state.user!);
 			if (!user) {
 				return { errors:
 					[{
@@ -399,10 +344,10 @@ export class AuthenticationService extends Resource {
 						message: `You're not signed in as a recognized user.`
 					}]
 				};
-			} else if (await verifyHash(inputs.existingPassword, user.password)) {
+			} else if (await verifyHash(inputs.existingPassword as string, user.password)) {
 				await this.#users.set(user.id, {
 					...user,
-					password: await hash(inputs.newPassword)
+					password: await hash(inputs.newPassword as string)
 				});
 				return {
 					message: "Password updated.",
@@ -424,16 +369,13 @@ export class AuthenticationService extends Resource {
 		}
 	}
 
-	buildApi() {
+	buildApi(this: AuthenticationService) {
 		return withContext(context => ({
 			getState: () => this.getState(context.cookies),
 
-			/**
-			 * 
-			 * @param {Parameters<typeof this['setState']>[1]} options 
-			 * @returns 
-			 */
-			setState: (options) => this.setState(context.cookies, options),
+			setState: (
+				options: Parameters<typeof this['setState']>[1]
+			) => this.setState(context.cookies, options),
 		}));
 	}
 }

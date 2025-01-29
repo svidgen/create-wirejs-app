@@ -9,11 +9,16 @@ import { LambdaFunctionURLHandler } from 'aws-lambda';
 // 	GetObjectCommand
 // } from '@aws-sdk/client-s3';
 
-// import * as api from '../src/api/index.js';
+import * as api from '../src/api/index.js';
 
 // const s3 = new S3Client()
 
+function getPostData(body: string) {
+	
+}
+
 export const handler: LambdaFunctionURLHandler = async (event, context) => {
+	const calls = JSON.parse(event.body!);
 	return {
 		statusCode: 200,
 		cookies: [],

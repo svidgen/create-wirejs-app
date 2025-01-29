@@ -1,6 +1,6 @@
 {
 	"name": "wirejs-deploy-amplify-basic",
-	"version": "0.0.7-alpha",
+	"version": "0.0.12-alpha",
 	"type": "module",
 	"bin": {
 		"wirejs-deploy-amplify-basic": "./build.js"
@@ -8,8 +8,10 @@
 	"dependencies": {
 		"copy": "^0.3.2",
 		"esbuild": "^0.24.2",
+		"jsdom": "^25.0.0",
 		"recursive-copy": "^2.0.14",
 		"rimraf": "^6.0.1",
+		"wirejs-dom": "^1.0.34",
 		"wirejs-resources": "^0.1.5-alpha"
 	},
 	"devDependencies": {

@@ -26,8 +26,22 @@ const apiCode = Object.keys(indexModule)
 
 const baseClient = dedent(1, /* js */ `
 	async function wirejsCallApi(method, ...args) {
+		function isNode() {
+			return typeof args[0]?.cookies?.getAll === 'function'
+			// return typeof process !== 'undefined' && process.versions != null && process.versions.node != null;
+		}
+
+		function apiUrl() {
+			if (isNode()) {
+				return "${API_URL}";
+			} else {
+				return "/api";
+			}
+		}
+		
 		let cookieHeader = {};
-		if (typeof args[0]?.cookies?.getAll === 'function') {
+
+		if (isNode()) {
 			const cookies = args[0]?.cookies?.getAll();
 			cookieHeader = typeof cookies === 'object'
 				? {
@@ -36,7 +50,7 @@ const baseClient = dedent(1, /* js */ `
 				: {};
 		}
 
-		const response = await fetch("${API_URL}", {
+		const response = await fetch(apiUrl(), {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
@@ -45,6 +59,8 @@ const baseClient = dedent(1, /* js */ `
 			body: JSON.stringify([{method, args:[...args]}]),
 		});
 		const body = await response.json();
+
+		// todo: if isNode(), copy cookies from response to args[0].cookies ...
 
 		const error = body[0].error;
 		if (error) {

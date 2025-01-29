@@ -1,3 +1,10 @@
+import {
+	S3Client,
+	ListObjectsCommand,
+	PutObjectCommand,
+	GetObjectCommand
+} from '@aws-sdk/client-s3';
+
 import { overrides } from 'wirejs-resources';
 import { Resource } from 'wirejs-resources';
 

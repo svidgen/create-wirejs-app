@@ -6,7 +6,7 @@ import { JSDOM } from 'jsdom';
 import { useJSDOM } from 'wirejs-dom/v2';
 import { Context, CookieJar } from 'wirejs-resources';
 
-const SSR_ROOT = path.join(path.dirname(module.filename), 'ssr');
+const SSR_ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), 'ssr');
 
 const logger = {
 	log(...items) {

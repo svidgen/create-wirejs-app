@@ -6,7 +6,7 @@ import fs from 'fs';
 import { rimraf } from 'rimraf';
 import copy from 'recursive-copy';
 import esbuild from 'esbuild';
-import { execSync } from 'child_process';
+import { exec, execSync } from 'child_process';
 
 const CWD = process.cwd();
 const __filename = import.meta.url.replace(/^file:/, '');
@@ -41,6 +41,9 @@ async function createSkeleton() {
 	// skeleton for hosting assets
 	await copy(path.join(SELF_DIR, 'amplify-hosting-assets'), path.join(HOSTING_DIR));
 	console.log("done creating deployment directories")
+
+	console.log("installing SSR server deps");
+	execSync(`npm install --prefix ${COMPUTE_DIR} --no-hoist`)
 }
 
 /**

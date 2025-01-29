@@ -1,17 +1,19 @@
 {
 	"name": "wirejs-resources",
-	"version": "0.1.5-alpha",
+	"version": "0.1.8-alpha",
 	"description": "Basic services and server-side resources for wirejs apps",
 	"type": "module",
-	"main": "./lib/index.js",
-	"types": "./lib/types.ts",
+	"main": "./dist/index.js",
+	"types": "./dist/types.d.ts",
 	"exports": {
 		".": {
-			"types": "./lib/types.ts",
-			"default": "./lib/index.js"
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
 		}
 	},
-	"scripts": {},
+	"scripts": {
+		"build": "tsc"
+	},
 	"repository": {
 		"type": "git",
 		"url": "git+https://github.com/svidgen/create-wirejs-app.git"
@@ -24,5 +26,12 @@
 	"homepage": "https://github.com/svidgen/create-wirejs-app#readme",
 	"dependencies": {
 		"jose": "^5.9.6"
-	}
+	},
+	"devDependencies": {
+		"typescript": "^5.7.3"
+	},
+	"files": [
+		"package.json",
+		"dist/*"
+	]
 }
