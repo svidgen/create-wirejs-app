@@ -1,23 +1,22 @@
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/services/file.js
+// ../../packages/create-wirejs-app/packages/wirejs-deploy-amplify-basic/wirejs-resources-overrides/index.js
+import { env } from "process";
+import {
+  S3Client,
+  ListObjectsCommand,
+  PutObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand
+} from "@aws-sdk/client-s3";
+
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/services/file.js
 import process from "process";
 import fs from "fs";
 import path from "path";
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/resource.js
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/resource.js
 var Resource = class {
-  /**
-   * @type {Resource | string}
-   */
   scope;
-  /**
-   * @type {string}
-   */
   id;
-  /**
-   * 
-   * @param {Resource | string} scope
-   * @param {string} id 
-   */
   constructor(scope, id) {
     this.scope = scope;
     this.id = id;
@@ -34,65 +33,35 @@ var Resource = class {
   }
 };
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/services/file.js
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/services/file.js
 var CWD = process.cwd();
 var ALREADY_EXISTS_CODE = "EEXIST";
 var FileService = class extends Resource {
-  /**
-   * @param {Resource | string} scope
-   * @param {string} id
-   */
   constructor(scope, id) {
     super(scope, id);
   }
-  /**
-   * @param {string} filename 
-   * @returns 
-   */
   #fullNameFor(filename) {
     const sanitizedId = this.absoluteId.replace("~", "-").replace(/\.+/g, ".");
     const sanitizedName = filename.replace("~", "-").replace(/\.+/g, ".");
     return path.join(CWD, "temp", "wirejs-services", sanitizedId, sanitizedName);
   }
-  /**
-   * @param {string} filename
-   * @param {BufferEncoding} [encoding]
-   * @return {Promise<string>} file data as a string
-   */
   async read(filename, encoding = "utf8") {
     return fs.promises.readFile(this.#fullNameFor(filename), { encoding });
   }
-  /**
-   * 
-   * @param {string} filename 
-   * @param {string} data
-   * @param {{
-   * 	onlyIfNotExists?: boolean;
-   * }} [options]
-   */
   async write(filename, data, { onlyIfNotExists = false } = {}) {
     const fullname = this.#fullNameFor(filename);
     const flag = onlyIfNotExists ? "wx" : "w";
     await fs.promises.mkdir(path.dirname(fullname), { recursive: true });
     return fs.promises.writeFile(fullname, data, { flag });
   }
-  /**
-   * 
-   * @param {string} filename 
-   */
   async delete(filename) {
     return fs.promises.unlink(this.#fullNameFor(filename));
   }
-  /**
-   * 
-   * @param {{
-   * 	prefix?: string
-   * }} [options]
-   */
   async *list({ prefix = "" } = {}) {
     const all = await fs.promises.readdir(CWD, { recursive: true });
     for (const name of all) {
-      if (prefix === void 0 || name.startsWith(prefix)) yield name;
+      if (prefix === void 0 || name.startsWith(prefix))
+        yield name;
     }
   }
   isAlreadyExistsError(error) {
@@ -100,7 +69,7 @@ var FileService = class extends Resource {
   }
 };
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/services/authentication.js
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/services/authentication.js
 import { scrypt, randomBytes } from "crypto";
 
 // ../../packages/create-wirejs-app/node_modules/jose/dist/node/esm/runtime/base64url.js
@@ -1291,137 +1260,40 @@ var SignJWT = class extends ProduceJWT {
   }
 };
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/resources/secret.js
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/resources/secret.js
 import crypto4 from "crypto";
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/overrides.js
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/overrides.js
 var overrides = {};
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/resources/secret.js
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/resources/secret.js
 var FILENAME = "secret";
 var Secret = class extends Resource {
-  /**
-   * @type {FileService}
-   */
   #fileService;
-  /**
-   * @type {Promise<any>}
-   */
   #initPromise;
-  /**
-   * @param {Resource | string}
-   * @param {string} id 
-   */
   constructor(scope, id) {
     super(scope, id);
     this.#fileService = new (overrides.FileService || FileService)(this, "files");
   }
   #initialize() {
-    this.#initPromise = this.#initPromise || this.#fileService.write(
-      FILENAME,
-      JSON.stringify(crypto4.randomBytes(64).toString("base64url")),
-      { onlyIfNotExists: true }
-    ).catch((error) => {
-      if (!this.#fileService.isAlreadyExistsError(error)) throw error;
+    this.#initPromise = this.#initPromise || this.#fileService.write(FILENAME, JSON.stringify(crypto4.randomBytes(64).toString("base64url")), { onlyIfNotExists: true }).catch((error) => {
+      if (!this.#fileService.isAlreadyExistsError(error))
+        throw error;
     });
     return this.#initPromise;
   }
-  /**
-   * @returns {any}
-   */
   async read() {
     await this.#initialize();
     return JSON.parse(await this.#fileService.read(FILENAME));
   }
-  /**
-   * @param {any} data 
-   */
   async write(data) {
     await this.#initialize();
     await this.#fileService.write(FILENAME, JSON.stringify(data));
   }
 };
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/adapters/cookie-jar.js
-var CookieJar = class {
-  /**
-   * @type {Record<string, Cookie>}
-   */
-  #cookies = {};
-  /**
-   * The list of cookies that have been set with `set()` which need to be
-   * sent to the client.
-   * 
-   * @type {Set<string>}
-   */
-  #setCookies = /* @__PURE__ */ new Set();
-  /**
-   * Initialize
-   * 
-   * @param {string | undefined} cookie
-   */
-  constructor(cookie) {
-    this.#cookies = Object.fromEntries(
-      (cookie || "").split(/;/g).map((c) => {
-        const [k, v] = c.split("=").map((p) => decodeURIComponent(p.trim()));
-        return [k, {
-          name: k,
-          value: v
-        }];
-      })
-    );
-  }
-  /**
-   * @param {Cookie} cookie 
-   */
-  set(cookie) {
-    this.#cookies[cookie.name] = { ...cookie };
-    this.#setCookies.add(cookie.name);
-  }
-  /**
-   * 
-   * @param {string} name 
-   * @returns {Cookie | undefined}
-   */
-  get(name) {
-    return this.#cookies[name] ? { ...this.#cookies[name] } : void 0;
-  }
-  /**
-   * 
-   * @param {string} name 
-   */
-  delete(name) {
-    if (this.#cookies[name]) {
-      this.#cookies[name].value = "-- deleted --";
-      this.#cookies[name].maxAge = 0;
-      this.#setCookies.add(name);
-    }
-  }
-  /**
-   * Gets a copy of all cookies.
-   * 
-   * Changes made to this copy are not reflected
-   * 
-   * @returns {Record<string, string>}
-   */
-  getAll() {
-    const all = {};
-    for (const cookie of Object.values(this.#cookies)) {
-      all[cookie.name] = cookie.value;
-    }
-    return all;
-  }
-  getSetCookies() {
-    const all = [];
-    for (const name of this.#setCookies) {
-      all.push({ ...this.#cookies[name] });
-    }
-    return all;
-  }
-};
-
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/adapters/context.js
-var contextWrappers = /* @__PURE__ */ new Set();
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/adapters/context.js
+var __requiresContext = Symbol("__requiresContext");
 function withContext(contextWrapper, path2 = []) {
   const fnOrNs = new Proxy(function() {
   }, {
@@ -1435,37 +1307,26 @@ function withContext(contextWrapper, path2 = []) {
       return functionOrNamespaceObject(...remainingArgs);
     },
     get(_target, prop) {
+      if (prop === __requiresContext)
+        return true;
       return withContext(contextWrapper, [...path2, prop]);
     }
   });
-  contextWrappers.add(fnOrNs);
   return fnOrNs;
 }
 function requiresContext(fnOrNS) {
-  return contextWrappers.has(fnOrNS);
+  return fnOrNS[__requiresContext] === true;
 }
 var Context = class {
-  /**
-   * @type {CookieJar} cookies
-   */
   cookies;
-  /**
-   * @type {URL} location
-   */
   location;
-  /**
-   * @param {{
-   * 	cookies: CookieJar;
-   * 	location: URL;
-   * }}
-   */
   constructor({ cookies, location }) {
     this.cookies = cookies;
     this.location = location;
   }
 };
 
-// ../../packages/create-wirejs-app/packages/wirejs-resources/lib/services/authentication.js
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/services/authentication.js
 function hash(password, salt) {
   return new Promise((resolve, reject) => {
     const finalSalt = salt || randomBytes(16).toString("hex");
@@ -1488,21 +1349,9 @@ var AuthenticationService = class extends Resource {
   #duration;
   #keepalive;
   #cookieName;
-  /**
-   * @type {Secret}
-   */
   #rawSigningSecret;
-  /**
-   * @type {Promise<Uint8Array<ArrayBufferLike>> | undefined}
-   */
   #signingSecret;
   #users;
-  /**
-   * 
-   * @param {Resource | string} scope
-   * @param {string} id 
-   * @param {AuthenticationServiceOptions} [options]
-   */
   constructor(scope, id, { duration, keepalive, cookie } = {}) {
     super(scope, id);
     this.#duration = duration || ONE_WEEK;
@@ -1512,10 +1361,6 @@ var AuthenticationService = class extends Resource {
     const fileService = new (overrides.FileService || FileService)(this, "files");
     this.#users = {
       id,
-      /**
-       * 
-       * @param {string} username
-       */
       async get(username) {
         try {
           const data = await fileService.read(this.filenameFor(username));
@@ -1524,24 +1369,13 @@ var AuthenticationService = class extends Resource {
           return void 0;
         }
       },
-      /**
-       * @param {string} username
-       * @param {User} user
-       */
       async set(username, details) {
         await fileService.write(this.filenameFor(username), JSON.stringify(details));
       },
-      /**
-       * @param {string} username
-       */
       async has(username) {
         const user = await this.get(username);
         return !!user;
       },
-      /**
-       * @param {string} username 
-       * @returns 
-       */
       filenameFor(username) {
         return `${username}.json`;
       }
@@ -1551,24 +1385,18 @@ var AuthenticationService = class extends Resource {
     const secretAsString = await this.#rawSigningSecret.read();
     return new TextEncoder().encode(secretAsString);
   }
-  /**
-   * @type {Promise<Uint8Array<ArrayBufferLike>>}
-   */
   get signingSecret() {
     if (!this.#signingSecret) {
       this.#signingSecret = this.getSigningSecret();
     }
     return this.#signingSecret;
   }
-  /**
-   * @param {CookieJar} cookies
-   * @returns {Promise<AuthenticationBaseState>}
-   */
   async getBaseState(cookies) {
-    let idCookie, idPayload, user;
+    let idCookie;
+    let user;
     try {
       idCookie = cookies.get(this.#cookieName)?.value;
-      idPayload = idCookie ? await jwtVerify(idCookie, await this.signingSecret) : void 0;
+      const idPayload = idCookie ? await jwtVerify(idCookie, await this.signingSecret) : void 0;
       user = idPayload ? idPayload.payload.sub : void 0;
     } catch (err) {
       console.error(err);
@@ -1585,14 +1413,11 @@ var AuthenticationService = class extends Resource {
       };
     }
   }
-  /**
-   * @param {CookieJar} cookies
-   * @returns {Promise<AuthenticationState>}
-   */
   async getState(cookies) {
     const state = await this.getBaseState(cookies);
     if (state.state === "authenticated") {
-      if (this.#keepalive) this.setBaseState(state);
+      if (this.#keepalive)
+        this.setBaseState(cookies, state.user);
       return {
         state,
         actions: {
@@ -1651,11 +1476,6 @@ var AuthenticationService = class extends Resource {
       };
     }
   }
-  /**
-   * 
-   * @param {CookieJar} cookies 
-   * @param {string | undefined} [user]
-   */
   async setBaseState(cookies, user) {
     if (!user) {
       cookies.delete(this.#cookieName);
@@ -1670,27 +1490,17 @@ var AuthenticationService = class extends Resource {
       });
     }
   }
-  /**
-   * 
-   * @param {Record<string, string>} input 
-   * @param {string[]} fields 
-   * @returns {AuthenticationError[] | undefined}
-   */
   missingFieldErrors(input, fields) {
     const errors = [];
     for (const field of fields) {
-      if (!input[field]) errors.push({
-        field,
-        message: "Field is required."
-      });
+      if (!input[field])
+        errors.push({
+          field,
+          message: "Field is required."
+        });
     }
     return errors.length > 0 ? errors : void 0;
   }
-  /**
-   * @param {CookieJar} cookies
-   * @param {PerformActionParameter} params
-   * @returns {Promise<AuthenticationState | { errors: AuthenticationError[] }>}
-   */
   async setState(cookies, { key, inputs, verb: _verb }) {
     if (key === "signout") {
       await this.setBaseState(cookies, void 0);
@@ -1772,24 +1582,133 @@ var AuthenticationService = class extends Resource {
   buildApi() {
     return withContext((context) => ({
       getState: () => this.getState(context.cookies),
-      /**
-       * 
-       * @param {Parameters<typeof this['setState']>[1]} options 
-       * @returns 
-       */
       setState: (options) => this.setState(context.cookies, options)
     }));
   }
 };
 
+// ../../packages/create-wirejs-app/packages/wirejs-resources/dist/adapters/cookie-jar.js
+var CookieJar = class {
+  #cookies = {};
+  /**
+   * The list of cookies that have been set with `set()` which need to be
+   * sent to the client.
+   */
+  #setCookies = /* @__PURE__ */ new Set();
+  /**
+   * Initialize
+   */
+  constructor(cookie) {
+    this.#cookies = Object.fromEntries((cookie || "").split(/;/g).map((c) => {
+      const [k, v] = c.split("=").map((p) => decodeURIComponent(p.trim()));
+      return [k, {
+        name: k,
+        value: v
+      }];
+    }));
+  }
+  set(cookie) {
+    this.#cookies[cookie.name] = { ...cookie };
+    this.#setCookies.add(cookie.name);
+  }
+  get(name) {
+    return this.#cookies[name] ? { ...this.#cookies[name] } : void 0;
+  }
+  delete(name) {
+    if (this.#cookies[name]) {
+      this.#cookies[name].value = "-- deleted --";
+      this.#cookies[name].maxAge = 0;
+      this.#setCookies.add(name);
+    }
+  }
+  /**
+   * Gets a copy of all cookies.
+   *
+   * Changes made to this copy are not reflected
+   */
+  getAll() {
+    const all = {};
+    for (const cookie of Object.values(this.#cookies)) {
+      all[cookie.name] = cookie.value;
+    }
+    return all;
+  }
+  getSetCookies() {
+    const all = [];
+    for (const name of this.#setCookies) {
+      all.push({ ...this.#cookies[name] });
+    }
+    return all;
+  }
+};
+
 // ../../packages/create-wirejs-app/packages/wirejs-deploy-amplify-basic/wirejs-resources-overrides/index.js
+var Bucket = env["BUCKET"];
+var s3 = new S3Client();
 var FileService2 = class extends Resource {
   constructor(scope, id) {
     super(scope, id);
     addResource("FileService", { absoluteId: this.absoluteId });
   }
-  async write(...args) {
-    console.log('"writing secret" ... :/ ... ');
+  /**
+   * @param {string} filename 
+   * @param {BufferEncoding} [encoding]
+   * 
+   */
+  async read(filename, encoding = "utf8") {
+    const Key = `${this.absoluteId}/${filename}`;
+    const command = new GetObjectCommand({ Bucket, Key });
+    const result = await s3.send(command);
+    return result.Body.transformToString(encoding);
+  }
+  /**
+   * @param {string} filename 
+   * @param {string} data 
+   * @param {{
+   * 	onlyIfNotExists: boolean
+   * }} [param2]
+   */
+  async write(filename, data, { onlyIfNotExists = false } = {}) {
+    const Key = `${this.absoluteId}/${filename}`;
+    const Body = data;
+    const commandDetails = { Bucket, Key, Body };
+    if (onlyIfNotExists) {
+      commandDetails["IfNoneMatch"] = "*";
+    }
+    const command = new PutObjectCommand();
+    return s3.send(command);
+  }
+  /**
+   * @param {string} filename 
+   */
+  async delete(filename) {
+    const Key = `${this.absoluteId}/${filename}`;
+    const command = new DeleteObjectCommand({
+      Bucket,
+      Key
+    });
+    return s3.send(command);
+  }
+  async *list({ prefix = "" } = {}) {
+    const Prefix = `${this.absoluteId}/${prefix}`;
+    let Marker = null;
+    while (true) {
+      const command = new ListObjectsCommand({
+        Bucket,
+        Prefix,
+        MaxKeys: 1e3,
+        Marker
+      });
+      const result = await s3.send(command);
+      Marker = result.NextMarker;
+      for (const o of result.Contents || []) {
+        yield o.Key;
+      }
+      if (!Marker) break;
+    }
+  }
+  isAlreadyExistsError(error) {
+    return error?.$metadata?.httpStatusCode === 412;
   }
 };
 overrides.FileService = FileService2;

@@ -1,21 +1,34 @@
 {
 	"name": "wirejs-deploy-amplify-basic",
-	"version": "0.0.12-alpha",
+	"version": "0.0.16-alpha",
 	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
 	"bin": {
 		"wirejs-deploy-amplify-basic": "./build.js"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.738.0",
 		"copy": "^0.3.2",
 		"esbuild": "^0.24.2",
 		"jsdom": "^25.0.0",
 		"recursive-copy": "^2.0.14",
 		"rimraf": "^6.0.1",
 		"wirejs-dom": "^1.0.34",
-		"wirejs-resources": "^0.1.5-alpha"
+		"wirejs-resources": "^0.1.8-alpha"
 	},
 	"devDependencies": {
 		"@aws-amplify/backend": "^1.14.0",
-		"@aws-sdk/client-s3": "^3.735.0"
-	}
+		"typescript": "^5.7.3"
+	},
+	"scripts": {
+		"build": "tsc"
+	},
+	"files": [
+		"amplify-backend-assets/*",
+		"amplify-hosting-assets/*",
+		"dist/*",
+		"build.js",
+		"package.json"
+	]
 }

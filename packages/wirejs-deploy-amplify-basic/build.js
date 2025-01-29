@@ -12,9 +12,6 @@ const CWD = process.cwd();
 const __filename = import.meta.url.replace(/^file:/, '');
 const SELF_DIR = path.dirname(__filename);
 const TEMP_DIR = path.join(SELF_DIR, 'temp');
-const RESOURCE_OVERRIDES_BUILD = path.join(
-	TEMP_DIR, 'wirejs-resource-overrides.build.js'
-);
 const PROJECT_API_DIR = path.join(CWD, 'api');
 const PROJECT_DIST_DIR = path.join(CWD, 'dist');
 const BACKEND_DIR = path.join(CWD, 'amplify');
@@ -64,7 +61,7 @@ async function installDeps() {
 			'esbuild': '^0.24.2',
 			'tsx': '^4.19.2',
 			'typescript': '^5.7.3',
-			'@aws-sdk/client-s3': "^3.735.0",
+			'wirejs-resources': `file:${SELF_DIR}`
 		}
 	};
 	await fs.promises.writeFile(
@@ -89,7 +86,7 @@ async function buildApiBundle() {
 	// looks like cruft at the moment, but we'll see ...
 	// await import(path.join(PROJECT_API_DIR, 'index.js'));
 
-	const outputPath = path.join(PROJECT_DIST_DIR, 'api', 'dist', 'index.js');
+	const outputPath = path.join(BACKEND_DIR, 'api.js');
 
 	// intermediate build of the resource overrides. this includes any deps we have
 	// on the original `wirejs-resources` into the intermediate bundle. doing this
@@ -102,6 +99,7 @@ async function buildApiBundle() {
 		outfile: RESOURCE_OVERRIDES_BUILD,
 		platform: 'node',
 		format: 'esm',
+		external: ['@aws-sdk/client-s3']
 	});
 
 	// exploratory build. builds using our overrides, which will emit a manifest of
@@ -115,7 +113,8 @@ async function buildApiBundle() {
 		format: 'esm',
 		alias: {
 			'wirejs-resources': RESOURCE_OVERRIDES_BUILD
-		}
+		},
+		external: ['@aws-sdk/client-s3']
 	});
 
 	// exploratory import. not strictly necessary until we're actually using the manifest
@@ -148,7 +147,8 @@ if (action === 'prebuild') {
 	console.log("starting prebuild");
 	await createSkeleton();
 	await installDeps();
-	await buildApiBundle();
+	// await buildApiBundle();
+
 	console.log("prebuild done");
 } else if (action === 'inject-backend') {
 	console.log("starting inject-backend");
