@@ -6,7 +6,9 @@ import { JSDOM } from 'jsdom';
 import { useJSDOM } from 'wirejs-dom/v2';
 import { Context, CookieJar } from 'wirejs-resources';
 
+
 const SSR_ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), 'ssr');
+let API_URL = undefined;
 
 const logger = {
 	log(...items) {
@@ -22,6 +24,17 @@ const logger = {
 		console.warn('wirejs', ...items);
 	}
 };
+
+try {
+	const backendConfigModule = await import('./config.js');
+	const backendConfig = backendConfigModule.default;
+	logger.log("backend config found", backendConfig);
+	if (backendConfig.apiUrl) {
+		API_URL = backendConfig.apiUrl;
+	}
+} catch {
+	logger.log("No backend API config found.");
+}
 
 /**
  * Compare two strings by length for sorting in order of increasing length.
@@ -121,8 +134,9 @@ async function trySSRPath(req, res) {
 
 	try {
 		useJSDOM(JSDOM);
-		global.self = global.window;
-		await import(srcPath);
+		const self = {};
+		const moduleData = await fs.promises.readFile(srcPath);
+		eval(`${moduleData}`);
 		const module = self.exports;
 		if (typeof module.generate === 'function') {
 			const doc = await module.generate(context);
@@ -162,6 +176,61 @@ async function trySSRPath(req, res) {
 
 /**
  * 
+ * @param {http.IncomingMessage} request 
+ * @returns 
+ */
+async function postData(request) {
+	return new Promise((resolve, reject) => {
+		const buffer = [];
+		const timeout = setTimeout(() => {
+			reject("Post data not received.");
+		}, 5000);
+		request.on('data', data => buffer.push(data));
+		request.on('end', () => {
+			if (!timeout) return;
+			clearTimeout(timeout);
+			resolve(buffer.join(''));
+		});
+	});
+};
+
+async function tryAPIPath(req, res) {
+	if (!API_URL) {
+		logger.error('Tried to proxy without API_URL config.');
+		return false;
+	}
+	return proxyRequest(req, res, API_URL);
+}
+
+async function proxyRequest(req, res, targetUrl) {
+	const headers = { ...req.headers };
+	const method = req.method;
+	const body = req.method === 'POST' ? await postData(req) : null;
+
+	const fetchOptions = { method, headers, body };
+
+	try {
+		const response = await fetch(targetUrl, fetchOptions);
+		const responseBody = await response.text();
+		const responseHeaders = response.headers;
+
+		res.statusCode = response.status;
+		[...responseHeaders.keys()].forEach((header) => {
+			res.setHeader(header, responseHeaders.get(header));
+		});
+
+		res.end(responseBody);
+	} catch (error) {
+		logger.error('Error while proxying request:', error);
+		res.statusCode = 500;
+		res.end('Internal Server Error');
+	}
+
+	return true;
+}
+
+/**
+ * 
  * @param {http.IncomingMessage} req 
  * @param {http.ServerResponse} res 
  * @returns 
@@ -171,6 +240,7 @@ async function handleRequest(req, res) {
 
 	if (await trySSRScriptPath(req, res)) return;
 	if (await trySSRPath(req, res)) return;
+	if (await tryAPIPath(req, res)) return;
 
 	// if we've made it this far, we don't have what you're looking for
 	res.statusCode = '404';

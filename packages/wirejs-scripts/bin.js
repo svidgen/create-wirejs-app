@@ -276,8 +276,9 @@ async function trySSRPath(req, res) {
 
 	try {
 		useJSDOM(JSDOM);
-		global.self = global.window;
-		await import(`${srcPath}?cache-id=${new Date().getTime()}`);
+		const self = {};
+		const moduleData = await fs.promises.readFile(srcPath);
+		eval(`${moduleData}`);
 		const module = self.exports;
 		if (typeof module.generate === 'function') {
 			const doc = await module.generate(context);
@@ -295,7 +296,7 @@ async function trySSRPath(req, res) {
 				doc.parentNode.body.appendChild(script);
 			}
 
-			res.setHeader('Content-type', 'text/html; charset=utf-8')
+			res.setHeader('Content-type', 'text/html; charset=utf-8');
 			res.end([
 				doctype ? `<!doctype ${doctype}>\n` : '',
 				doc.outerHTML

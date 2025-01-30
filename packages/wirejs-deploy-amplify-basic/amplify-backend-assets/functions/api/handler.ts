@@ -47,14 +47,13 @@ async function callApiMethod(api: any, call: any, context: any) {
 export const handler: LambdaFunctionURLHandler = async (event, context) => {
 	const calls = JSON.parse(event.body!);
 	const responses = [];
+	const wjsContext = createContext(event);
 
 	for (const call of calls) {
 		console.log('handling API call', call);
-		responses.push(await callApiMethod(api, call, context));
+		responses.push(await callApiMethod(api, call, wjsContext));
 	}
 	
-	const wjsContext = createContext(event);
-
 	console.log('setting cookies', wjsContext.cookies.getSetCookies());
 
 	const cookies: string[] = [];

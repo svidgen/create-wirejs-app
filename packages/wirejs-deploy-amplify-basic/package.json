@@ -1,6 +1,6 @@
 {
 	"name": "wirejs-deploy-amplify-basic",
-	"version": "0.0.16-alpha",
+	"version": "0.0.22",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",

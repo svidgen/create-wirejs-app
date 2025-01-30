@@ -42,7 +42,8 @@ const baseClient = dedent(1, /* js */ `
 		let cookieHeader = {};
 
 		if (isNode()) {
-			const cookies = args[0]?.cookies?.getAll();
+			const context = args[0];
+			const cookies = context.cookies.getAll();
 			cookieHeader = typeof cookies === 'object'
 				? {
 					Cookie: Object.entries(cookies).map(kv => kv.join('=')).join('; ')
@@ -60,7 +61,24 @@ const baseClient = dedent(1, /* js */ `
 		});
 		const body = await response.json();
 
-		// todo: if isNode(), copy cookies from response to args[0].cookies ...
+		if (isNode()) {
+			const context = args[0];
+			for (const c of response.headers.getSetCookie()) {
+				const parts = c.split(';').map(p => p.trim());
+				const flags = parts.slice(1);
+				const [name, value] = parts[0].split('=').map(decodeURIComponent);
+				const httpOnly = flags.includes('HttpOnly');
+				const secure = flags.includes('Secure');
+				const maxAgePart = flags.find(f => f.startsWith('Max-Age='))?.split('=')[1];
+				context.cookies.set({
+					name,
+					value,
+					httpOnly,
+					secure,
+					maxAge: maxAgePart ? parseInt(maxAgePart) : undefined
+				});
+			}
+		}
 
 		const error = body[0].error;
 		if (error) {

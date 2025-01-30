@@ -158,11 +158,11 @@ if (action === 'prebuild') {
 	const configJSON = JSON.stringify({
 		apiUrl
 	});
+	const configJS = `const config = ${configJSON};\nexport default config;`;
 
-	await fs.promises.writeFile(
-		path.join(PROJECT_API_DIR, 'config.js'),
-		`const config = ${configJSON};\nexport default config;`
-	);
+	await fs.promises.writeFile(path.join(PROJECT_API_DIR, 'config.js'), configJS);
+	await fs.promises.writeFile(path.join(COMPUTE_DIR, 'config.js'), configJS);
+
 	console.log("inject-backend done");
 } else if (action === 'build-hosting-artifacts') {
 	console.log("starting build-hosting-artifacts");

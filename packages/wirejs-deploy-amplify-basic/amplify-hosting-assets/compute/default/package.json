@@ -3,6 +3,6 @@
 	"dependencies": {
 		"jsdom": "^25.0.0",
 		"wirejs-dom": "^1.0.34",
-		"wirejs-resources": "^0.1.6-alpha"
+		"wirejs-resources": "^0.1.8-alpha"
 	}
 }
