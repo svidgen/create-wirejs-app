@@ -1,14 +1,22 @@
 {
 	"name": "wirejs-resources",
-	"version": "0.1.8-alpha",
+	"version": "0.1.9-alpha",
 	"description": "Basic services and server-side resources for wirejs apps",
 	"type": "module",
 	"main": "./dist/index.js",
-	"types": "./dist/types.d.ts",
+	"types": "./dist/index.d.ts",
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
 			"default": "./dist/index.js"
+		},
+		"./internal": {
+			"types": "./dist/internal/index.d.ts",
+			"default": "./dist/internal/index.js"
+		},
+		"./client": {
+			"types": "./dist/client/index.d.ts",
+			"default": "./dist/client/index.js"
 		}
 	},
 	"scripts": {

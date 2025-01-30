@@ -1,6 +1,6 @@
 {
 	"name": "create-wirejs-app",
-	"version": "2.0.7",
+	"version": "2.0.8",
 	"description": "Initializes a wirejs package.",
 	"author": "Jon Wire",
 	"license": "MIT",

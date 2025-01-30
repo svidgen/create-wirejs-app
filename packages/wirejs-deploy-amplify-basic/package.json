@@ -1,9 +1,23 @@
 {
 	"name": "wirejs-deploy-amplify-basic",
-	"version": "0.0.22",
+	"version": "0.0.23",
 	"type": "module",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./internal": {
+			"types": "./dist/internal/index.d.ts",
+			"default": "./dist/internal/index.js"
+		},
+		"./client": {
+			"types": "./dist/client/index.d.ts",
+			"default": "./dist/client/index.js"
+		}
+	},
 	"bin": {
 		"wirejs-deploy-amplify-basic": "build.js"
 	},
@@ -15,7 +29,7 @@
 		"recursive-copy": "^2.0.14",
 		"rimraf": "^6.0.1",
 		"wirejs-dom": "^1.0.34",
-		"wirejs-resources": "^0.1.8-alpha"
+		"wirejs-resources": "^0.1.9-alpha"
 	},
 	"devDependencies": {
 		"@aws-amplify/backend": "^1.14.0",

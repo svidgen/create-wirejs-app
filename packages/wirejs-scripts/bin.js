@@ -12,6 +12,7 @@ import { rimraf } from 'rimraf';
 import { JSDOM } from 'jsdom';
 import { useJSDOM } from 'wirejs-dom/v2';
 import { requiresContext, Context, CookieJar } from 'wirejs-resources';
+import { prebuildApi } from 'wirejs-resources/internal';
 
 const CWD = process.cwd();
 const webpackConfig = webpackConfigure(process.env, process.argv);
@@ -440,8 +441,13 @@ const engine = {
 		// explicit exit forces lingering child processes to die.
 		logger.log('stopping')
 		process.exit();
-	}
+	},
 
+	async ['prebuild-api']() {
+		logger.log("prebuilding api...");
+		await prebuildApi();
+		logger.log("api prebuild finished");
+	},
 };
 
 if (typeof engine[action] === 'function') {

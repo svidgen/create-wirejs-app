@@ -23,10 +23,6 @@ marked.setOptions({
 	}
 });
 
-const BUILD_ID = (new Date()).getTime();
-
-fs.writeFileSync('./src/build_id.json', JSON.stringify(BUILD_ID.toString()));
-
 function distPath({ subpathOut = '', subpathIn = '', extensionOut } = {}) {
 	return function ({ context, absoluteFilename }) {
 		const prefixIn = path.resolve(context, subpathIn);

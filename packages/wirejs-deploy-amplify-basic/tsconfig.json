@@ -9,6 +9,9 @@
 	  "skipLibCheck": true,
 	  "declaration": true, 
 	},
-	"include": ["./wirejs-resources-overrides/index.ts"],
+	"include": [
+		"./wirejs-resources-overrides/index.ts",
+		"./wirejs-resources-overrides/*/index.ts"
+	],
 	"exclude": ["node_modules", "../../node_modules"]
   }
