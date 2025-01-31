@@ -90,7 +90,7 @@ const Generated = {
 
 		try {
 			if (contentPath.endsWith('.js')) {
-				const module = await import(contentPath);
+				const module = await import(contentPath + '?' + new Date() + Math.random());
 				if (typeof module.generate === 'function') {
 					const doc = await module.generate(contentPath);
 					const doctype = doc.parentNode.doctype?.name || '';

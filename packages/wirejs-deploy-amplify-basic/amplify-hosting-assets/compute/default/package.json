@@ -2,7 +2,7 @@
 	"type": "module",
 	"dependencies": {
 		"jsdom": "^25.0.0",
-		"wirejs-dom": "^1.0.34",
+		"wirejs-dom": "^1.0.35",
 		"wirejs-resources": "^0.1.9-alpha"
 	}
 }

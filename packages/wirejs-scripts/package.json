@@ -1,6 +1,6 @@
 {
 	"name": "wirejs-scripts",
-	"version": "3.0.3",
+	"version": "3.0.4",
 	"description": "Basic build and start commands for wirejs apps",
 	"type": "module",
 	"bin": {
@@ -31,6 +31,6 @@
 		"rimraf": "^6.0.1",
 		"style-loader": "^2.0.0",
 		"webpack": "^5.97.1",
-		"wirejs-dom": "^1.0.34"
+		"wirejs-dom": "^1.0.35"
 	}
 }
