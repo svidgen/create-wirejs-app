@@ -23,6 +23,7 @@
 	"dependencies": {
 		"copy-webpack-plugin": "^10.2.4",
 		"css-loader": "^5.2.0",
+		"esbuild": "^0.24.2",
 		"file-loader": "^6.2.0",
 		"glob": "^7.2.0",
 		"jsdom": "^25.0.1",
@@ -31,6 +32,6 @@
 		"rimraf": "^6.0.1",
 		"style-loader": "^2.0.0",
 		"webpack": "^5.97.1",
-		"wirejs-dom": "^1.0.35"
+		"wirejs-dom": "^1.0.38"
 	}
 }

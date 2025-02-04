@@ -8,6 +8,7 @@ import path from 'path';
 import webpack from 'webpack';
 import webpackConfigure from './configs/webpack.config.js';
 import { rimraf } from 'rimraf';
+import esbuild from 'esbuild';
 
 import { JSDOM } from 'jsdom';
 import { useJSDOM } from 'wirejs-dom/v2';
@@ -72,7 +73,7 @@ async function callApiMethod(api, call, context) {
 		const [scope, ...rest] = call.method;
 		logger.info('api method parsed', { scope, rest });
 		if (rest.length === 0) {
-			logger.info('api method resolved. invoking...');
+			logger.info('api method resolved. invoking...', requiresContext(api[scope]));
 			if (requiresContext(api[scope])) {
 				return {
 					data: await api[scope](context, ...call.args.slice(1))
@@ -208,7 +209,7 @@ function byLength(a, b) {
  * @returns 
  */
 function globMatch(pattern, text) {
-    const parts = pattern.split('*');
+    const parts = pattern.split('%');
     const regex = new RegExp(parts.join('.+'));
     return regex.test(text);
 }
@@ -366,6 +367,14 @@ async function compile(watch = false) {
 	const stats = await new Promise(async (resolve, reject) => {
 		let compiler;
 		if (watch) {
+			const prebuild = await esbuild.context({
+				entryPoints: [`${CWD}/src/**/*.ts`],
+				outdir: `${CWD}/pre-dist`,
+				bundle: true,
+				format: 'esm',
+				conditions: ['wirejs:client'],
+			});
+			prebuild.watch();
 			webpack({
 				...webpackConfig,
 				mode: 'development',
@@ -382,6 +391,13 @@ async function compile(watch = false) {
 			});
 		} else {
 			logger.log('instantiating webpack compiler');
+			await esbuild.build({
+				entryPoints: [`${CWD}/src/**/*.ts`],
+				outdir: `${CWD}/pre-dist`,
+				bundle: true,
+				format: 'esm',
+				conditions: ['wirejs:client'],
+			});
 			compiler = webpack(webpackConfig);
 			compiler.run((err, res) => {
 				logger.log('invoking webpack compiler');
@@ -415,6 +431,12 @@ const engine = {
 		fs.mkdirSync('dist');
 		logger.log('recreated dist folder');
 
+		rimraf.sync('pre-dist');
+		logger.log('cleared old pre-dist folder');
+
+		fs.mkdirSync('pre-dist');
+		logger.log('recreated pre-dist folder');
+
 		try {
 			await compile(watch);
 			logger.log('finished compile');
@@ -444,7 +466,14 @@ const engine = {
 	},
 
 	async ['prebuild-api']() {
-		logger.log("prebuilding api...");
+		logger.log("prebuilding api ...");
+		await esbuild.build({
+			entryPoints: [path.join(CWD, 'index.ts')],
+			platform: 'node',
+			bundle: true,
+			format: 'esm',
+			outfile: path.join(CWD, 'index.js')
+		});
 		await prebuildApi();
 		logger.log("api prebuild finished");
 	},

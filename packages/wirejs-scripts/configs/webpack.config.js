@@ -9,6 +9,7 @@ import { JSDOM } from 'jsdom';
 
 
 const CWD = process.cwd();
+const SRC = 'pre-dist';
 
 // https://marked.js.org/using_advanced
 marked.setOptions({
@@ -68,7 +69,7 @@ const SSG = {
 		}
 
 		const layoutPath = path.join(
-			'src',
+			SRC,
 			'layouts',
 			(_meta.layout || 'default')
 		) + '.html';
@@ -103,7 +104,7 @@ const Generated = {
 
 					if (hydrationsFound) {
 						const script = doc.parentNode.createElement('script');
-						script.src = contentPath.substring((CWD + '/src/ssg').length);
+						script.src = contentPath.substring((`${CWD}/${SRC}/ssg`).length);
 						doc.parentNode.body.appendChild(script);
 					}
 
@@ -130,23 +131,21 @@ export default (env, argv) => {
 		devtool = 'eval-cheap-source-map';
 	}
 
-	const sources = ['./src/index.js']
-		.concat(glob.sync('./src/layouts/**/*.js'))
-		.concat(glob.sync('./src/routes/**/*.js'))
-		.concat(glob.sync('./src/ssg/**/*.js'))
-		.concat(glob.sync('./src/ssr/**/*.js'))
+	const sources = [`./${SRC}/index.{js,ts}`]
+		.concat(glob.sync(`./${SRC}/ssg/**/*.{js,ts}`))
+		.concat(glob.sync(`./${SRC}/ssr/**/*.{js,ts}`))
 	;
 
 	const entry = sources.reduce((files, path) => {
-		if (path.match(/src\/ssg/)) {
-			files[path.toString().slice('./src/ssg'.length)] = path;
-		} else if (path.match(/src\/ssr/)) {
+		if (path.match(new RegExp(`${SRC}/ssg`))) {
+			files[path.toString().slice(`./${SRC}/ssg`.length)] = path;
+		} else if (path.match(new RegExp(`${SRC}/ssr`))) {
 			// keep SSR bundles in the ssr subfolder
-			files[path.toString().slice('./src'.length)] = path;
-		} else if (path.match(/src\/routes/)) {
-			files[path.toString().slice('./src/routes'.length)] = path;
-		} else if (path.match(/src\/layouts/)) {
-			files[path.toString().slice('./src/'.length)] = path;
+			files[path.toString().slice(`./${SRC}`.length)] = path;
+		} else if (path.match(new RegExp(`${SRC}/routes`))) {
+			files[path.toString().slice(`./${SRC}/routes`.length)] = path;
+		} else if (path.match(new RegExp(`${SRC}/layouts`))) {
+			files[path.toString().slice(`./${SRC}/`.length)] = path;
 		}
 		return files;
 	}, {});
@@ -186,9 +185,9 @@ export default (env, argv) => {
 			new CopyWebpackPlugin({
 				patterns: [
 					{
-						from: './src/layouts/**/*.html',
+						from: `./${SRC}/layouts/**/*.html`,
 						to: distPath({
-							subpathIn: 'src/layouts',
+							subpathIn: `${SRC}/layouts`,
 							subpathOut: 'layouts'
 						}),
 						transform: CollectLayouts,
@@ -206,8 +205,8 @@ export default (env, argv) => {
 						priority: 10,
 					},
 					{
-						from: './src/ssg/**/*.js',
-						to: distPath({ subpathIn: 'src/ssg', extensionOut: 'html' }),
+						from: `./${SRC}/ssg/**/*.{js,ts}`,
+						to: distPath({ subpathIn: `${SRC}/ssg`, extensionOut: 'html' }),
 						transform: Generated,
 						noErrorOnMissing: true,
 						priority: 5

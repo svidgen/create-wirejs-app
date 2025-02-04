@@ -53,7 +53,7 @@ function byLength(a, b) {
  * @returns 
  */
 function globMatch(pattern, text) {
-    const parts = pattern.split('*');
+    const parts = pattern.split('%');
     const regex = new RegExp(parts.join('.+'));
     return regex.test(text);
 }

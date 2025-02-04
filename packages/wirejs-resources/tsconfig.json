@@ -6,9 +6,10 @@
 	  "outDir": "./dist",
 	  "esModuleInterop": true,
 	  "strict": true,
+	  "noImplicitAny": true,
 	  "skipLibCheck": true,
 	  "declaration": true, 
 	},
-	"include": ["src/**/*"],       // Include all your source files
-	"exclude": ["node_modules", "../../node_modules"]    // Exclude node_modules folder from compilation
-  }
+	"include": ["src/**/*"],
+	"exclude": ["node_modules", "../../node_modules"]
+}

@@ -28,7 +28,7 @@
 		"jsdom": "^25.0.0",
 		"recursive-copy": "^2.0.14",
 		"rimraf": "^6.0.1",
-		"wirejs-dom": "^1.0.34",
+		"wirejs-dom": "^1.0.38",
 		"wirejs-resources": "^0.1.9-alpha"
 	},
 	"devDependencies": {

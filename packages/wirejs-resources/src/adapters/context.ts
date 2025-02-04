@@ -1,6 +1,6 @@
 import { CookieJar } from "./cookie-jar.js";
 
-const __requiresContext = Symbol('__requiresContext');
+const __requiresContext = '__requiresContext';
 
 type ApiMethod = (...args: any) => any;
 
@@ -10,7 +10,7 @@ type ApiNamespace = {
 
 type ContextfulApiMethod<T> = 
 	T extends ((...args: infer ARGS) => infer RT)
-	? ((context: Context | boolean, ...args: ARGS) => RT extends Promise<any>
+	? ((context: Context | undefined | null, ...args: ARGS) => RT extends Promise<any>
 		? RT
 		: Promise<RT>
 	) : never
@@ -54,7 +54,11 @@ export function withContext<
 }
 
 export function requiresContext(fnOrNS: Object): fnOrNS is (context: Context) => any {
-	return (fnOrNS as any)[__requiresContext] === true;
+	Object.defineProperty(fnOrNS, __requiresContext, {
+		enumerable: false,
+		value: true
+	});
+	return true;
 }
 
 export class Context {
