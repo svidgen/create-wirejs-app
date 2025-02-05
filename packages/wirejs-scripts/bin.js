@@ -468,11 +468,11 @@ const engine = {
 	async ['prebuild-api']() {
 		logger.log("prebuilding api ...");
 		await esbuild.build({
-			entryPoints: [path.join(CWD, 'index.ts')],
+			entryPoints: [`${CWD}/**/*.ts`],
+			outdir: CWD,
 			platform: 'node',
-			bundle: true,
+			bundle: false,
 			format: 'esm',
-			outfile: path.join(CWD, 'index.js')
 		});
 		await prebuildApi();
 		logger.log("api prebuild finished");
