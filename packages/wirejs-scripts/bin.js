@@ -370,10 +370,11 @@ async function compile(watch = false) {
 			const prebuild = await esbuild.context({
 				entryPoints: [`${CWD}/src/**/*.ts`],
 				outdir: `${CWD}/pre-dist`,
-				bundle: true,
+				bundle: false,
 				format: 'esm',
 				conditions: ['wirejs:client'],
 			});
+			await prebuild.rebuild();
 			prebuild.watch();
 			webpack({
 				...getWebpackConfig(),
