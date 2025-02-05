@@ -1,19 +1,19 @@
 import { attribute, html, node } from 'wirejs-dom/v2';
+import type {
+	AuthenticationApi,
+	AuthenticationState,
+	AuthenticationMachineState,
+	AuthenticationMachineAction,
+	AuthenticationMachineInput,
+} from 'wirejs-resources';
 
-/**
- * @typedef {import('wirejs-services').AuthenticationService} AuthenticationService
- * @typedef {ReturnType<AuthenticationService['buildApi']>} AuthStateApi
- * @typedef {Awaited<ReturnType<AuthStateApi['getState']>>} AuthState
- * @typedef {AuthState['actions'][string]} AuthStateAction
- * @typedef {Parameters<AuthStateApi['setState']>[0]} AuthStateActionInput
-  */
+type AuthCallback = (state: AuthenticationMachineState) => any;
 
-/**
- * @param {AuthStateAction} action
- * @param {(act: AuthStateActionInput) => void} act
- */
-export const authenticatoraction = (action, act) => {
-	const inputs = Object.entries(action.inputs || []).map(([name, { label, type }]) => {
+export const authenticatoraction = (
+	action: AuthenticationMachineAction,
+	act: (input: AuthenticationMachineInput) => void
+) => {
+	const inputs = Object.entries(action.fields || []).map(([name, { label, type }]) => {
 		const id = `input_${Math.floor(Math.random() * 1_000_000)}`;
 		const input = html`<div>
 			<label for=${id}>${label}</label>
@@ -44,16 +44,16 @@ export const authenticatoraction = (action, act) => {
 
 	const actors = link ?? buttons;
 
-	if (action.inputs && Object.keys(action.inputs).length > 0) {
+	if (action.fields && Object.keys(action.fields).length > 0) {
 		return html`<authenticatoraction>
 			<div>
 				<h4 style='margin-top: 1rem; margin-bottom: 0.5rem;'>${action.name}</h4>
 				<form
-					onsubmit=${evt => {
+					onsubmit=${(evt: SubmitEvent) => {
 						evt.preventDefault();
 						act({
 							key: action.key,
-							verb: evt.submitter?.value,
+							verb: (evt.submitter as any)?.value,
 							inputs: Object.fromEntries(inputs.map(input => ([
 								input.data.name,
 								input.data.value
@@ -74,71 +74,55 @@ export const authenticatoraction = (action, act) => {
 	}
 }
 
-/**
- * @param {AuthStateApi} stateManager
- * @returns 
- */
-export const authenticator = (stateManager) => {
-	/**
-	 * @type {Set<(state: AuthState) => any>}
-	 */
-	const listeners = new Set();
-
-	/**
-	 * @type {AuthState}
-	 */
-	let lastKnownState = undefined;
+export const authenticator = (
+	stateManager: AuthenticationApi,
+	initialState?: AuthenticationMachineState
+) => {
+	const listeners = new Set<AuthCallback>();
+	let lastKnownState: AuthenticationMachineState | undefined = undefined;
 
 	const self = html`<authenticator style='display: block; min-width: 15em;'>
-		${node('state', html`<span>Loading ...</span>`)}
-	</authenticator>`.extend(self => ({
-		/**
-		 * @param {AuthState} state 
-		 */
-		renderState(state) {
-			lastKnownState = state;
-			if (state.errors) {
-				alert(state.errors.map(e => e.message).join("\n\n"));
+		${node('state', html`<span>Loading ...</span>` as HTMLElement)}
+	</authenticator>`.extend(() => ({
+		renderState(state: AuthenticationMachineState | { errors: any[] }) {
+			if ('errors' in state && state.errors) {
+				alert((state as any).errors.map((e: any) => e.message).join("\n\n"));
 			} else {
+				lastKnownState = state as AuthenticationMachineState;
 				self.data.state = html`<div>
-					<div>${state.message || ''}</div>
-					<div>${Object.entries(state.actions).map(([key, action]) => {
-						return authenticatoraction({key, ...action}, async act => {
-							self.renderState(await stateManager.setState(true, act));
+					<div>${lastKnownState.message || ''}</div>
+					<div>${Object.entries(lastKnownState.actions).map(([_key, action]) => {
+						return authenticatoraction({...action}, async act => {
+							self.renderState(await stateManager.setState(null, act));
 						});
 					})}</div>
 				</div>`;
 			}
 			for (const listener of listeners) {
 				try {
-					listener(state);
+					listener(state as AuthenticationMachineState);
 				} catch (error) {
 					console.error("Error calling auth state listener.");
 				}
 			}
 		}
 	})).onadd(async (self) => {
-		self.renderState(await stateManager.getState(true))
+		if (initialState) {
+			console.log('authenticator render state');
+			self.renderState(initialState)
+		}
 	}).extend(self => ({
 		data: {
-			/**
-			 * @param {(state: AuthState) => any} callback
-			 */
-			onchange: (callback) => {
+			setState: (state: AuthenticationMachineState) => self.renderState(state),
+			onchange: (callback: AuthCallback) => {
 				listeners.add(callback);
 			},
-
-			/**
-			 * @param {(state: AuthState) => any} callback
-			 */
-			removeonchange: (callback) => {
+			removeonchange: (callback: AuthCallback) => {
 				listeners.delete(callback);
 			},
-
 			focus: () => {
 				[...self.getElementsByTagName('input')].shift()?.focus();
 			},
-
 			get lastKnownState() {
 				return lastKnownState;
 			}

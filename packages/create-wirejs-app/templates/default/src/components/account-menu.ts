@@ -1,32 +1,28 @@
 import { attribute, html, node, text, id } from 'wirejs-dom/v2';
 import { authenticator } from './authenticator.js';
+import type {
+	AuthenticationApi,
+	AuthenticationMachineState,
+} from 'wirejs-resources';
 
-/**
- * @typedef {import('wirejs-services').AuthenticationService} AuthenticationService
- * @typedef {ReturnType<AuthenticationService['buildApi']>} AuthStateApi
- * @typedef {Awaited<ReturnType<AuthStateApi['getState']>>} AuthState
- * @typedef {AuthState['actions'][string]} AuthStateAction
- * @typedef {Parameters<AuthStateApi['setState']>[0]} AuthStateActionInput
- * @typedef {import('wirejs-services').Context} Context
- */
+type Callback = (state: AuthenticationMachineState) => any;
 
-/**
- * @param {AuthStateApi} api
- */
-export const accountMenu = (api) => {
+export const accountMenu = ({ api, initialState }: {
+	api: AuthenticationApi,
+	initialState?: AuthenticationMachineState
+}) => {
 	const uiState = {
 		expanded: false
 	};
 
-	/**
-	 * @type {Set<(state: AuthState) => any>}
-	 */
-	const listeners = new Set();
+	const listeners = new Set<Callback>();
 
-	const listenForClose = event => {
+	const listenForClose = (
+		event: (MouseEvent | KeyboardEvent)
+	) => {
 		if (
-			(event.type === 'click' && !self.data.menu.contains(event.target))
-			|| (event.type === 'keyup' && event.key === 'Escape')
+			(event.type === 'click' && !self.data.menu.contains(event.target as any))
+			|| (event.type === 'keyup' && (event as any).key === 'Escape')
 		) {
 			close()
 		}
@@ -51,9 +47,9 @@ export const accountMenu = (api) => {
 		self.data.menu.style.right = `${document.body.clientWidth - position.right + 16}px`;
 	};
 
-	const authenticatorNode = authenticator(api);
+	const authenticatorNode = authenticator(api, initialState);
 	authenticatorNode.data.onchange(state => {
-		self.data.user = state.state.user || '';
+		self.data.user = state.user?.username || '';
 		close();
 		for (const listener of listeners) {
 			try {
@@ -67,7 +63,10 @@ export const accountMenu = (api) => {
 	const self = html`<accountmenu style='display: inline-block;'>
 		<div
 			style='display: inline-block;'
-		>${node('user', name => name ? html`<b>${name}</b>` : html`<i>Anonymous</i>`)}</div>
+		>${node(
+			'user',
+			initialState?.user?.username || '',
+			name => name ? html`<b>${name}</b>` : html`<i>Anonymous</i>`)}</div>
 		<div style='
 				display: inline-block;
 				border: 1px solid silver;
@@ -89,7 +88,7 @@ export const accountMenu = (api) => {
 				}
 			}}
 		>☰</div>
-		<div ${id('menu')} style='
+		<div ${id('menu', HTMLDivElement)} style='
 			display: none;
 			position: absolute;
 			border: 1px solid gray;
@@ -99,21 +98,18 @@ export const accountMenu = (api) => {
 			box-shadow: -0.125rem 0.125rem 0.25rem lightgray;
 		'>${node('authenticator', authenticatorNode)}</div>
 	</accountmenu>`.onadd(async self => {
-		const state = await api.getState(true);
-		self.data.user = state.state.user || '';
+		if (!initialState) {
+			const state = await api.getState(null);
+			authenticatorNode.data.setState(state);
+			self.data.user = state.user?.username || '';
+		}
 	}).extend(self => ({
 		data: {
-			/**
-			 * @param {(state: AuthState) => any} callback
-			 */
-			onchange: (callback) => {
+			onchange: (callback: Callback) => {
 				listeners.add(callback);
 			},
 
-			/**
-			 * @param {(state: AuthState) => any} callback
-			 */
-			removeonchange: (callback) => {
+			removeonchange: (callback: Callback) => {
 				listeners.delete(callback);
 			},
 		}
