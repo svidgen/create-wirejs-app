@@ -1,6 +1,6 @@
 {
 	"name": "wirejs-scripts",
-	"version": "3.0.6",
+	"version": "3.0.7",
 	"description": "Basic build and start commands for wirejs apps",
 	"type": "module",
 	"bin": {

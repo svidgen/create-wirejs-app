@@ -16,7 +16,7 @@ import { requiresContext, Context, CookieJar } from 'wirejs-resources';
 import { prebuildApi } from 'wirejs-resources/internal';
 
 const CWD = process.cwd();
-const webpackConfig = webpackConfigure(process.env, process.argv);
+const getWebpackConfig = () => webpackConfigure(process.env, process.argv);
 const [_nodeBinPath, _scriptPath, action] = process.argv;
 const processes = [];
 
@@ -376,7 +376,7 @@ async function compile(watch = false) {
 			});
 			prebuild.watch();
 			webpack({
-				...webpackConfig,
+				...getWebpackConfig(),
 				mode: 'development',
 				watch: true
 			}, () => {
@@ -390,15 +390,16 @@ async function compile(watch = false) {
 				console.log('Started listening on http://localhost:3000/')
 			});
 		} else {
-			logger.log('instantiating webpack compiler');
+			logger.log('prebundling JS');
 			await esbuild.build({
 				entryPoints: [`${CWD}/src/**/*.ts`],
 				outdir: `${CWD}/pre-dist`,
-				bundle: true,
+				bundle: false,
 				format: 'esm',
 				conditions: ['wirejs:client'],
 			});
-			compiler = webpack(webpackConfig);
+			logger.log('starting webpack compiler');
+			compiler = webpack(getWebpackConfig());
 			compiler.run((err, res) => {
 				logger.log('invoking webpack compiler');
 				if (err) {
@@ -425,16 +426,16 @@ const engine = {
 	async build({ watch = false } = {}) {
 		logger.log('build starting');
 
-		rimraf.sync('dist');
+		await rimraf('dist');
 		logger.log('cleared old dist folder');
 
-		fs.mkdirSync('dist');
-		logger.log('recreated dist folder');
-
-		rimraf.sync('pre-dist');
+		await rimraf('pre-dist');
 		logger.log('cleared old pre-dist folder');
 
-		fs.mkdirSync('pre-dist');
+		await fs.promises.mkdir('dist');
+		logger.log('recreated dist folder');
+
+		await fs.promises.mkdir('pre-dist');
 		logger.log('recreated pre-dist folder');
 
 		try {

@@ -61,8 +61,11 @@ async function installDeps() {
 			'esbuild': '^0.24.2',
 			'tsx': '^4.19.2',
 			'typescript': '^5.7.3',
-			'wirejs-resources': `file:${SELF_DIR}`
 		}
+	};
+	packageData.dependencies = {
+		...(packageData.dependencies || {}),
+		'wirejs-resources': `file:${SELF_DIR}`
 	};
 	await fs.promises.writeFile(
 		path.join(CWD, 'package.json'),

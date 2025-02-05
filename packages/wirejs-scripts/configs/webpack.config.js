@@ -131,9 +131,9 @@ export default (env, argv) => {
 		devtool = 'eval-cheap-source-map';
 	}
 
-	const sources = [`./${SRC}/index.{js,ts}`]
-		.concat(glob.sync(`./${SRC}/ssg/**/*.{js,ts}`))
-		.concat(glob.sync(`./${SRC}/ssr/**/*.{js,ts}`))
+	const sources = [`./${SRC}/index.js`]
+		.concat(glob.sync(`./${SRC}/ssg/**/*.js`))
+		.concat(glob.sync(`./${SRC}/ssr/**/*.js`))
 	;
 
 	const entry = sources.reduce((files, path) => {
@@ -205,7 +205,7 @@ export default (env, argv) => {
 						priority: 10,
 					},
 					{
-						from: `./${SRC}/ssg/**/*.{js,ts}`,
+						from: `./${SRC}/ssg/**/*.js`,
 						to: distPath({ subpathIn: `${SRC}/ssg`, extensionOut: 'html' }),
 						transform: Generated,
 						noErrorOnMissing: true,
